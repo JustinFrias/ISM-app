@@ -24,12 +24,12 @@ export const SignUpPage: React.FC = () => {
             <div className="flex justify-center mb-3">
               <BrandLogo size="lg" />
             </div>
-            <h1 className="font-display font-black text-2xl text-skeuo-chrome tracking-tight">
+            <h1 className="font-brand font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-100 to-gray-300 tracking-[-0.02em] leading-tight">
               Inventory System Management
             </h1>
-            <p className="text-xs text-skeuo-gold/80 mt-1 uppercase tracking-wider font-semibold">
-              Create Your ISM Account
-            </p>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-skeuo-gold/10 border border-skeuo-gold/30 text-skeuo-gold text-[10px] font-mono font-semibold uppercase tracking-widest mt-2">
+              Create Your Account
+            </div>
           </div>
           <div className="flex justify-center">
             <SignUp

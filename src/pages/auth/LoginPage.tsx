@@ -66,16 +66,17 @@ export const LoginPage: React.FC = () => {
               <BrandLogo size="xl" />
             </div>
 
-            <h1 className="font-display font-black text-2xl text-skeuo-chrome tracking-tight">
+            <h1 className="font-brand font-bold text-[22px] sm:text-2xl text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-100 to-gray-300 tracking-[-0.02em] leading-tight">
               Inventory System Management
             </h1>
-            <p className="text-xs text-skeuo-gold/80 mt-1 tracking-widest uppercase font-semibold">
-              ISM Enterprise Portal
-            </p>
-            <div className="flex items-center justify-center gap-2 mt-3">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-skeuo-gold/30" />
-              <Shield size={12} className="text-skeuo-gold" />
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-skeuo-gold/30" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-skeuo-gold/10 border border-skeuo-gold/30 text-skeuo-gold text-[10px] font-mono font-semibold uppercase tracking-widest mt-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-skeuo-gold animate-led-pulse-amber" />
+              ISM Enterprise System
+            </div>
+            <div className="flex items-center justify-center gap-2 mt-3.5">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
+              <Shield size={11} className="text-gray-500" />
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
             </div>
 
             {/* Auth mode toggle if Clerk is configured */}

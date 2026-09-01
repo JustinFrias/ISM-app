@@ -93,11 +93,11 @@ export const Sidebar: React.FC = () => {
         <div className="flex items-center gap-3">
           <BrandLogo size="sm" />
           <div className="min-w-0">
-            <p className="font-display font-bold text-skeuo-gold text-xs leading-snug truncate">
+            <p className="font-brand font-bold text-gray-100 text-xs leading-snug tracking-tight truncate">
               Inventory System
             </p>
-            <p className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">
-              Management (ISM)
+            <p className="text-[10px] text-skeuo-gold font-medium tracking-wider uppercase font-mono">
+              Management
             </p>
           </div>
         </div>

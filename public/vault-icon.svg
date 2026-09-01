@@ -1,21 +1,24 @@
-<svg width="64" height="64" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="top" x1="24" y1="6" x2="24" y2="22" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stopColor="#fced96"/>
+    <linearGradient id="favTop" x1="32" y1="8" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#fae588"/>
       <stop offset="100%" stopColor="#d4af37"/>
     </linearGradient>
-    <linearGradient id="left" x1="8" y1="18" x2="24" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stopColor="#c59b27"/>
-      <stop offset="100%" stopColor="#7a580c"/>
+    <linearGradient id="favLeft" x1="10" y1="20" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#3b4252"/>
+      <stop offset="100%" stopColor="#14171e"/>
     </linearGradient>
-    <linearGradient id="right" x1="24" y1="18" x2="40" y2="42" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stopColor="#e5c158"/>
-      <stop offset="100%" stopColor="#997312"/>
+    <linearGradient id="favRight" x1="32" y1="20" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#2e3442"/>
+      <stop offset="100%" stopColor="#0e1015"/>
     </linearGradient>
   </defs>
-  <polygon points="24,6 39,14.5 24,23 9,14.5" fill="url(#top)" stroke="#fff" stroke-width="0.75" stroke-opacity="0.4"/>
-  <polygon points="9,14.5 24,23 24,40 9,31.5" fill="url(#left)" stroke="#000" stroke-width="0.5" stroke-opacity="0.5"/>
-  <polygon points="24,23 39,14.5 39,31.5 24,40" fill="url(#right)" stroke="#000" stroke-width="0.5" stroke-opacity="0.5"/>
-  <polygon points="24,18 28,23 24,28 20,23" fill="#0f1218" stroke="#d4af37" stroke-width="1"/>
-  <circle cx="24" cy="23" r="1.5" fill="#fef08a"/>
+  <polygon points="32,8 54,20 32,32 10,20" fill="url(#favTop)" stroke="#fff" stroke-width="0.8" stroke-opacity="0.6"/>
+  <polygon points="10,20 32,32 32,54 10,42" fill="url(#favLeft)" stroke="rgba(212,175,55,0.4)" stroke-width="0.8"/>
+  <polygon points="32,32 54,20 54,42 32,54" fill="url(#favRight)" stroke="rgba(212,175,55,0.4)" stroke-width="0.8"/>
+  <line x1="32" y1="8" x2="32" y2="32" stroke="#473708" stroke-width="1.5" stroke-opacity="0.8"/>
+  <line x1="10" y1="31" x2="32" y2="43" stroke="#d4af37" stroke-width="1" stroke-opacity="0.5"/>
+  <line x1="32" y1="43" x2="54" y2="31" stroke="#d4af37" stroke-width="1" stroke-opacity="0.5"/>
+  <polygon points="32,26 37,32 32,38 27,32" fill="#090b10" stroke="#f59e0b" stroke-width="1.2"/>
+  <circle cx="32" cy="32" r="1.8" fill="#fef08a"/>
 </svg>

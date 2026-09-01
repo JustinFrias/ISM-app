@@ -24,6 +24,10 @@ interface InventoryStore {
 
   // Computed
   getAlertCounts: () => { outOfStock: number; critical: number; expired: number; expiringSoon: number };
+
+  // Data Management
+  resetToEmpty: () => void;
+  seedDemoData: () => void;
 }
 
 const computeStatus = (p: Product): Product['status'] => {
@@ -36,9 +40,9 @@ const computeStatus = (p: Product): Product['status'] => {
 export const useInventoryStore = create<InventoryStore>()(
   persist(
     (set, get) => ({
-      categories: mockCategories,
-      products: mockProducts,
-      movements: mockStockMovements,
+      categories: [],
+      products: [],
+      movements: [],
 
       addCategory: (cat) => set(state => ({
         categories: [...state.categories, { ...cat, id: uuidv4(), createdAt: new Date().toISOString() }],
@@ -58,14 +62,14 @@ export const useInventoryStore = create<InventoryStore>()(
       addProduct: (prod) => {
         const id = uuidv4();
         const now = new Date().toISOString();
-        const newProd: Product = {
+        const fullProd: Product = {
           ...prod,
           id,
+          status: prod.stockAvailable === 0 ? 'OUT_OF_STOCK' : prod.stockAvailable <= prod.criticalLevel ? 'CRITICAL' : 'IN_STOCK',
           createdAt: now,
           updatedAt: now,
-          status: computeStatus({ ...prod, id, createdAt: now, updatedAt: now, status: 'IN_STOCK' }),
         };
-        set(state => ({ products: [...state.products, newProd] }));
+        set(state => ({ products: [fullProd, ...state.products] }));
         return id;
       },
 
@@ -77,51 +81,61 @@ export const useInventoryStore = create<InventoryStore>()(
         }),
       })),
 
-      deleteProduct: (id) => set(state => ({
-        products: state.products.filter(p => p.id !== id),
-      })),
+      deleteProduct: (id) => set(state => ({ products: state.products.filter(p => p.id !== id) })),
 
       adjustStock: (productId, type, quantity, userId, userName, ref, notes) => {
-        set(state => {
-          const prod = state.products.find(p => p.id === productId);
-          if (!prod) return state;
-          const delta = ['STOCK_IN', 'RETURN'].includes(type) ? quantity : -quantity;
-          const newStock = Math.max(0, prod.stockAvailable + delta);
-          const movement: StockMovement = {
-            id: uuidv4(),
-            productId,
-            productName: prod.name,
-            sku: prod.sku,
-            userId,
-            userName,
-            type,
-            quantity,
-            previousStock: prod.stockAvailable,
-            currentStock: newStock,
-            referenceNumber: ref,
-            notes,
-            timestamp: new Date().toISOString(),
-          };
-          const updatedProd = { ...prod, stockAvailable: newStock, updatedAt: new Date().toISOString() };
-          return {
-            products: state.products.map(p => p.id === productId ? { ...updatedProd, status: computeStatus(updatedProd) } : p),
-            movements: [movement, ...state.movements],
-          };
-        });
+        const prod = get().products.find(p => p.id === productId);
+        if (!prod) return;
+
+        let newAvailable = prod.stockAvailable;
+        if (type === 'STOCK_IN' || type === 'RETURN') newAvailable += quantity;
+        if (type === 'STOCK_OUT' || type === 'DAMAGED' || type === 'EXPIRED_DISPOSAL') {
+          newAvailable = Math.max(0, newAvailable - quantity);
+        }
+        if (type === 'ADJUSTMENT') newAvailable = quantity;
+
+        const movement: StockMovement = {
+          id: uuidv4(),
+          productId,
+          productName: prod.name,
+          sku: prod.sku,
+          type,
+          quantity,
+          previousStock: prod.stockAvailable,
+          currentStock: newAvailable,
+          referenceNumber: ref,
+          notes,
+          userId,
+          userName,
+          timestamp: new Date().toISOString(),
+        };
+
+        set(state => ({
+          movements: [movement, ...state.movements],
+          products: state.products.map(p => {
+            if (p.id !== productId) return p;
+            const updated = { ...p, stockAvailable: newAvailable, updatedAt: new Date().toISOString() };
+            return { ...updated, status: computeStatus(updated) };
+          }),
+        }));
       },
 
       getAlertCounts: () => {
-        const prods = get().products;
-        const today = new Date();
-        const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const products = get().products;
+        const now = new Date();
+        const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
         return {
-          outOfStock: prods.filter(p => p.status === 'OUT_OF_STOCK').length,
-          critical: prods.filter(p => p.status === 'CRITICAL').length,
-          expired: prods.filter(p => p.status === 'EXPIRED').length,
-          expiringSoon: prods.filter(p => p.expiryDate && new Date(p.expiryDate) > today && new Date(p.expiryDate) <= in30Days).length,
+          outOfStock: products.filter(p => p.stockAvailable === 0).length,
+          critical: products.filter(p => p.stockAvailable > 0 && p.stockAvailable <= p.criticalLevel).length,
+          expired: products.filter(p => p.expiryDate && new Date(p.expiryDate) < now).length,
+          expiringSoon: products.filter(p => p.expiryDate && new Date(p.expiryDate) >= now && new Date(p.expiryDate) <= thirtyDays).length,
         };
       },
+
+      resetToEmpty: () => set({ categories: [], products: [], movements: [] }),
+      seedDemoData: () => set({ categories: mockCategories, products: mockProducts, movements: mockStockMovements }),
     }),
-    { name: 'skeuo-inventory-store' }
+    { name: 'ism-inventory-store-v2' }
   )
 );

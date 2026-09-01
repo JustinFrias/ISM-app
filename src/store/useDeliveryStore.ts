@@ -11,13 +11,15 @@ interface DeliveryStore {
   updateDeliveryStatus: (id: string, status: Delivery['status'], deliveredDate?: string) => void;
   addInvoice: (inv: Omit<Invoice, 'id'>) => string;
   updatePaymentStatus: (id: string, status: Invoice['paymentStatus'], paidAmount?: number) => void;
+  resetToEmpty: () => void;
+  seedDemoData: () => void;
 }
 
 export const useDeliveryStore = create<DeliveryStore>()(
   persist(
     (set) => ({
-      deliveries: mockDeliveries,
-      invoices: mockInvoices,
+      deliveries: [],
+      invoices: [],
 
       addDelivery: (d) => {
         const id = uuidv4();
@@ -38,7 +40,10 @@ export const useDeliveryStore = create<DeliveryStore>()(
       updatePaymentStatus: (id, status) => set(state => ({
         invoices: state.invoices.map(i => i.id === id ? { ...i, paymentStatus: status } : i),
       })),
+
+      resetToEmpty: () => set({ deliveries: [], invoices: [] }),
+      seedDemoData: () => set({ deliveries: mockDeliveries, invoices: mockInvoices }),
     }),
-    { name: 'skeuo-delivery-store' }
+    { name: 'ism-delivery-store-v2' }
   )
 );

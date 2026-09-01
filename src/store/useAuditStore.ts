@@ -8,18 +8,22 @@ interface AuditStore {
   logs: ActivityLog[];
   addLog: (entry: Omit<ActivityLog, 'id' | 'timestamp'>) => void;
   clearLogs: () => void;
+  resetToEmpty: () => void;
+  seedDemoData: () => void;
 }
 
 export const useAuditStore = create<AuditStore>()(
   persist(
     (set) => ({
-      logs: mockActivityLogs,
+      logs: [],
       addLog: (entry) => set(state => ({
         logs: [{ ...entry, id: uuidv4(), timestamp: new Date().toISOString() }, ...state.logs],
       })),
       clearLogs: () => set({ logs: [] }),
+      resetToEmpty: () => set({ logs: [] }),
+      seedDemoData: () => set({ logs: mockActivityLogs }),
     }),
-    { name: 'skeuo-audit-store' }
+    { name: 'ism-audit-store-v2' }
   )
 );
 

@@ -12,6 +12,7 @@ import { useInventoryStore } from '../../store/useInventoryStore';
 import { cn } from '../../utils';
 import { SkeuoLED } from '../skeuomorphic/SkeuoLED';
 import { isClerkConfigured } from '../../services/clerk';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface NavSection {
   title: string;
@@ -88,14 +89,16 @@ export const Sidebar: React.FC = () => {
         boxShadow: '4px 0 24px rgba(0,0,0,0.6), inset -1px 0 0 rgba(255,255,255,0.04)',
       }}>
       {/* Logo / Brand */}
-      <div className="px-5 py-5 border-b border-white/08 flex-shrink-0">
+      <div className="px-4 py-4 border-b border-white/08 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-metallic-gold flex items-center justify-center shadow-skeuo-button flex-shrink-0">
-            <span className="text-black font-black text-lg leading-none">S</span>
-          </div>
-          <div>
-            <p className="font-display font-bold text-skeuo-gold text-sm leading-none">SkeuoVault</p>
-            <p className="text-[10px] text-gray-600 tracking-widest uppercase mt-0.5">Inventory System</p>
+          <BrandLogo size="sm" />
+          <div className="min-w-0">
+            <p className="font-display font-bold text-skeuo-gold text-xs leading-snug truncate">
+              Inventory System
+            </p>
+            <p className="text-[10px] text-gray-400 font-semibold tracking-wider uppercase">
+              Management (ISM)
+            </p>
           </div>
         </div>
       </div>

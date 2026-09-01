@@ -35,8 +35,8 @@ export const PrintInventoryReportPage: React.FC = () => {
             {/* Report Header */}
             <div className="flex items-start justify-between mb-8 pb-6 border-b-2 border-gray-200">
               <div>
-                <h1 className="font-display font-black text-3xl text-gray-900">SkeuoVault</h1>
-                <p className="text-sm text-gray-500 tracking-widest uppercase mt-1">Inventory Management System</p>
+                <h1 className="font-display font-black text-2xl text-gray-900">Inventory System Management</h1>
+                <p className="text-xs text-gray-500 tracking-widest uppercase mt-1">ISM Enterprise Report</p>
               </div>
               <div className="text-right">
                 <p className="font-display font-bold text-lg">INVENTORY REPORT</p>
@@ -107,7 +107,7 @@ export const PrintInventoryReportPage: React.FC = () => {
 
             {/* Report Footer */}
             <div className="mt-8 pt-6 border-t-2 border-gray-200 flex items-center justify-between text-xs text-gray-400">
-              <p>SkeuoVault Inventory Management System — Confidential</p>
+              <p>Inventory System Management (ISM) — Confidential</p>
               <div className="text-right">
                 <div className="w-40 border-t border-gray-400 pt-1 mt-6">
                   <p>Authorized Signature</p>

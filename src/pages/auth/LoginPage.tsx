@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { SkeuoButton } from '../../components/skeuomorphic/SkeuoButton';
 import { SkeuoInput } from '../../components/skeuomorphic/SkeuoInput';
 import { isClerkConfigured, skeuoClerkAppearance } from '../../services/clerk';
+import { BrandLogo } from '../../components/common/BrandLogo';
 
 export const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -60,21 +61,17 @@ export const LoginPage: React.FC = () => {
 
           {/* Header */}
           <div className="px-8 pt-8 pb-5 text-center border-b border-white/06">
-            {/* Vault dial visual */}
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              className="mx-auto mb-4 w-16 h-16 rounded-full bg-metallic-gold flex items-center justify-center shadow-skeuo-vault relative"
-            >
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="absolute w-1 h-2.5 bg-black/40 rounded-full origin-center"
-                  style={{ transform: `rotate(${i * 30}deg) translateY(-26px)` }} />
-              ))}
-              <Lock size={22} className="text-black relative z-10" strokeWidth={2.5} />
-            </motion.div>
+            {/* Brand 3D Logo */}
+            <div className="flex justify-center mb-4">
+              <BrandLogo size="xl" />
+            </div>
 
-            <h1 className="font-display font-black text-2xl text-skeuo-chrome">SkeuoVault</h1>
-            <p className="text-xs text-gray-500 mt-1 tracking-wider uppercase">Inventory Management System</p>
+            <h1 className="font-display font-black text-2xl text-skeuo-chrome tracking-tight">
+              Inventory System Management
+            </h1>
+            <p className="text-xs text-skeuo-gold/80 mt-1 tracking-widest uppercase font-semibold">
+              ISM Enterprise Portal
+            </p>
             <div className="flex items-center justify-center gap-2 mt-3">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-skeuo-gold/30" />
               <Shield size={12} className="text-skeuo-gold" />

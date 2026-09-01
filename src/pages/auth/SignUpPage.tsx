@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Lock, Shield } from 'lucide-react';
 import { SignUp } from '@clerk/clerk-react';
 import { skeuoClerkAppearance } from '../../services/clerk';
+import { BrandLogo } from '../../components/common/BrandLogo';
 
 export const SignUpPage: React.FC = () => {
   return (
@@ -21,8 +21,15 @@ export const SignUpPage: React.FC = () => {
         <div className="absolute -inset-2 rounded-[28px] bg-metallic-gold opacity-20 blur-sm" />
         <div className="relative skeuo-panel border border-skeuo-gold/20 rounded-3xl overflow-hidden shadow-skeuo-vault p-6">
           <div className="text-center mb-6">
-            <h1 className="font-display font-black text-2xl text-skeuo-chrome">SkeuoVault</h1>
-            <p className="text-xs text-gray-500 mt-1 uppercase tracking-wider">Create Your Account</p>
+            <div className="flex justify-center mb-3">
+              <BrandLogo size="lg" />
+            </div>
+            <h1 className="font-display font-black text-2xl text-skeuo-chrome tracking-tight">
+              Inventory System Management
+            </h1>
+            <p className="text-xs text-skeuo-gold/80 mt-1 uppercase tracking-wider font-semibold">
+              Create Your ISM Account
+            </p>
           </div>
           <div className="flex justify-center">
             <SignUp

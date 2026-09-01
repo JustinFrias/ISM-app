@@ -62,8 +62,8 @@ export const InvoicePrintPage: React.FC = () => {
                 <div className="bg-gray-900 text-gray-100 px-8 py-6">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h1 className="font-display font-black text-2xl text-skeuo-gold">SkeuoVault</h1>
-                      <p className="text-xs text-gray-400 tracking-widest uppercase mt-0.5">Inventory & Distribution</p>
+                      <h1 className="font-display font-black text-2xl text-skeuo-gold">Inventory System Management</h1>
+                      <p className="text-xs text-gray-400 tracking-widest uppercase mt-0.5">ISM Enterprise Logistics</p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg tracking-wider">INVOICE</p>
@@ -135,7 +135,7 @@ export const InvoicePrintPage: React.FC = () => {
                 {/* Footer */}
                 <div className="h-3 bg-gray-50 border-y border-dashed border-gray-300" />
                 <div className="px-8 py-4 bg-gray-900 text-gray-500 text-[9px] text-center">
-                  <p>Thank you for your business · SkeuoVault Inventory Management System</p>
+                  <p>Thank you for your business · Inventory System Management (ISM)</p>
                   <p className="mt-0.5">Printed: {formatDateTime(new Date().toISOString())}</p>
                 </div>
               </motion.div>

@@ -8,6 +8,7 @@ interface AuthStore {
   isAuthenticated: boolean;
   login: (username: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
+  setClerkUser: (user: User | null) => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -40,6 +41,14 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       logout: () => set({ currentUser: null, isAuthenticated: false }),
+
+      setClerkUser: (user) => {
+        if (user) {
+          set({ currentUser: user, isAuthenticated: true });
+        } else {
+          set({ currentUser: null, isAuthenticated: false });
+        }
+      },
     }),
     { name: 'skeuo-auth-store' }
   )

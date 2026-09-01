@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, Truck, DollarSign, FileText, Activity,
   Users, Shield, TrendingUp, AlertTriangle, PackageX, BarChart3,
-  Box, LogOut, Layers, ReceiptText, ShoppingCart, ChevronDown, Warehouse,
+  Box, LogOut, Layers, ReceiptText, ShoppingCart, Warehouse,
 } from 'lucide-react';
+import { UserButton, useClerk } from '@clerk/clerk-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useInventoryStore } from '../../store/useInventoryStore';
 import { cn } from '../../utils';
 import { SkeuoLED } from '../skeuomorphic/SkeuoLED';
+import { isClerkConfigured } from '../../services/clerk';
 
 interface NavSection {
   title: string;
@@ -67,9 +69,13 @@ export const Sidebar: React.FC = () => {
   const { currentUser, logout } = useAuthStore();
   const getAlertCounts = useInventoryStore(s => s.getAlertCounts);
   const navigate = useNavigate();
+  const clerk = isClerkConfigured ? useClerk() : null;
   const alerts = getAlertCounts();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (isClerkConfigured && clerk) {
+      await clerk.signOut();
+    }
     logout();
     navigate('/login');
   };
@@ -97,14 +103,27 @@ export const Sidebar: React.FC = () => {
       {/* User card */}
       <div className="px-4 py-3 border-b border-white/06 flex-shrink-0">
         <div className="flex items-center gap-3 bg-white/04 rounded-xl px-3 py-2.5 border border-white/06">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-skeuo-gold to-skeuo-goldDark flex items-center justify-center flex-shrink-0 text-black font-bold text-xs">
-            {currentUser?.fullName.charAt(0)}
-          </div>
-          <div className="min-w-0">
-            <p className="text-gray-200 text-xs font-semibold truncate">{currentUser?.fullName}</p>
+          {isClerkConfigured ? (
+            <UserButton
+              afterSignOutUrl="/login"
+              appearance={{
+                elements: {
+                  avatarBox: 'w-8 h-8 rounded-full border border-skeuo-gold/40',
+                },
+              }}
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-skeuo-gold to-skeuo-goldDark flex items-center justify-center flex-shrink-0 text-black font-bold text-xs">
+              {currentUser?.fullName?.charAt(0) || 'U'}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-gray-200 text-xs font-semibold truncate">
+              {currentUser?.fullName || 'Active User'}
+            </p>
             <span className="inline-flex items-center gap-1 text-[10px] text-skeuo-gold font-semibold tracking-wider uppercase">
               <SkeuoLED status={currentUser?.role === 'ADMIN' ? 'amber' : 'green'} size="sm" pulse />
-              {currentUser?.role}
+              {currentUser?.role || 'STAFF'}
             </span>
           </div>
         </div>

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { useAuthStore } from './store/useAuthStore';
 import { AppShell } from './components/layout/AppShell';
+import { isClerkConfigured, resolveUserRole } from './services/clerk';
 
 // Pages
 import { LoginPage } from './pages/auth/LoginPage';
+import { SignUpPage } from './pages/auth/SignUpPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { MonthlyProfitReportPage } from './pages/admin/MonthlyProfitReportPage';
@@ -24,6 +27,32 @@ import { DeliveryReportsPage } from './pages/delivery/DeliveryReportsPage';
 import { TotalProductsDeliveryPage } from './pages/delivery/TotalProductsDeliveryPage';
 import { ReceivedProductsPage } from './pages/delivery/ReceivedProductsPage';
 import { InvoicePrintPage } from './pages/delivery/InvoicePrintPage';
+
+// Synchronizes Clerk user to zustand auth store
+const ClerkAuthSync: React.FC = () => {
+  const { user, isLoaded, isSignedIn } = useUser();
+  const setClerkUser = useAuthStore(s => s.setClerkUser);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (isSignedIn && user) {
+      const role = resolveUserRole(user);
+      setClerkUser({
+        id: user.id,
+        username: user.username || user.primaryEmailAddress?.emailAddress?.split('@')[0] || 'user',
+        fullName: user.fullName || user.firstName || 'Authorized User',
+        email: user.primaryEmailAddress?.emailAddress || '',
+        role: role,
+        isActive: true,
+        createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+      });
+    }
+  }, [user, isLoaded, isSignedIn, setClerkUser]);
+
+  return null;
+};
 
 // Route guards
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -50,11 +79,16 @@ function App() {
 
   return (
     <BrowserRouter>
+      {isClerkConfigured && <ClerkAuthSync />}
       <Routes>
         {/* Public */}
-        <Route path="/login" element={isAuthenticated
+        <Route path="/login/*" element={isAuthenticated
           ? <Navigate to={currentUser?.role === 'ADMIN' ? '/admin' : '/staff'} replace />
           : <LoginPage />
+        } />
+        <Route path="/sign-up/*" element={isAuthenticated
+          ? <Navigate to={currentUser?.role === 'ADMIN' ? '/admin' : '/staff'} replace />
+          : <SignUpPage />
         } />
 
         {/* Protected — with AppShell */}

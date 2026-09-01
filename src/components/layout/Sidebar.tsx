@@ -1,0 +1,160 @@
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  LayoutDashboard, Package, Truck, DollarSign, FileText, Activity,
+  Users, Shield, TrendingUp, AlertTriangle, PackageX, BarChart3,
+  Box, LogOut, Layers, ReceiptText, ShoppingCart, ChevronDown, Warehouse,
+} from 'lucide-react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useInventoryStore } from '../../store/useInventoryStore';
+import { cn } from '../../utils';
+import { SkeuoLED } from '../skeuomorphic/SkeuoLED';
+
+interface NavSection {
+  title: string;
+  items: { to: string; label: string; icon: React.ReactNode; adminOnly?: boolean; alertKey?: string }[];
+}
+
+const navSections: NavSection[] = [
+  {
+    title: 'Overview',
+    items: [
+      { to: '/admin', label: 'Admin Dashboard', icon: <LayoutDashboard size={16} />, adminOnly: true },
+      { to: '/staff', label: 'Staff Dashboard', icon: <Layers size={16} /> },
+    ],
+  },
+  {
+    title: 'Inventory',
+    items: [
+      { to: '/inventory', label: 'Inventory', icon: <Package size={16} /> },
+      { to: '/stocks', label: 'Stock Monitoring', icon: <Warehouse size={16} /> },
+      { to: '/stock-io', label: 'Stock In / Out', icon: <Box size={16} /> },
+      { to: '/categories', label: 'Categories', icon: <Layers size={16} />, adminOnly: true },
+      { to: '/products', label: 'Products', icon: <Package size={16} />, adminOnly: true },
+      { to: '/expired', label: 'Expired Products', icon: <PackageX size={16} />, alertKey: 'expired' },
+      { to: '/alerts', label: 'Stock Alerts', icon: <AlertTriangle size={16} />, alertKey: 'alerts' },
+    ],
+  },
+  {
+    title: 'Deliveries',
+    items: [
+      { to: '/deliveries', label: 'Delivery Reports', icon: <Truck size={16} /> },
+      { to: '/add-delivery', label: 'Add Delivery', icon: <ShoppingCart size={16} /> },
+      { to: '/received', label: 'Received Products', icon: <ReceiptText size={16} /> },
+      { to: '/invoice', label: 'Invoices', icon: <FileText size={16} /> },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      { to: '/profit', label: 'Profit Reports', icon: <TrendingUp size={16} />, adminOnly: true },
+      { to: '/ledger', label: 'Receivables & Payables', icon: <DollarSign size={16} />, adminOnly: true },
+      { to: '/expenses', label: 'Expenses', icon: <BarChart3 size={16} />, adminOnly: true },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { to: '/activity', label: 'Activity Logs', icon: <Activity size={16} />, adminOnly: true },
+      { to: '/admin-accounts', label: 'Admin Accounts', icon: <Shield size={16} />, adminOnly: true },
+      { to: '/staff-accounts', label: 'Staff Accounts', icon: <Users size={16} />, adminOnly: true },
+    ],
+  },
+];
+
+export const Sidebar: React.FC = () => {
+  const { currentUser, logout } = useAuthStore();
+  const getAlertCounts = useInventoryStore(s => s.getAlertCounts);
+  const navigate = useNavigate();
+  const alerts = getAlertCounts();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col z-30 overflow-y-auto"
+      style={{
+        background: 'radial-gradient(ellipse at 30% 20%, #3d2a1f 0%, #1a120e 40%, #0d0f14 100%)',
+        borderRight: '1px solid rgba(212,175,55,0.15)',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.6), inset -1px 0 0 rgba(255,255,255,0.04)',
+      }}>
+      {/* Logo / Brand */}
+      <div className="px-5 py-5 border-b border-white/08 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-metallic-gold flex items-center justify-center shadow-skeuo-button flex-shrink-0">
+            <span className="text-black font-black text-lg leading-none">S</span>
+          </div>
+          <div>
+            <p className="font-display font-bold text-skeuo-gold text-sm leading-none">SkeuoVault</p>
+            <p className="text-[10px] text-gray-600 tracking-widest uppercase mt-0.5">Inventory System</p>
+          </div>
+        </div>
+      </div>
+
+      {/* User card */}
+      <div className="px-4 py-3 border-b border-white/06 flex-shrink-0">
+        <div className="flex items-center gap-3 bg-white/04 rounded-xl px-3 py-2.5 border border-white/06">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-skeuo-gold to-skeuo-goldDark flex items-center justify-center flex-shrink-0 text-black font-bold text-xs">
+            {currentUser?.fullName.charAt(0)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-gray-200 text-xs font-semibold truncate">{currentUser?.fullName}</p>
+            <span className="inline-flex items-center gap-1 text-[10px] text-skeuo-gold font-semibold tracking-wider uppercase">
+              <SkeuoLED status={currentUser?.role === 'ADMIN' ? 'amber' : 'green'} size="sm" pulse />
+              {currentUser?.role}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
+        {navSections.map(section => {
+          const visibleItems = section.items.filter(
+            item => !item.adminOnly || currentUser?.role === 'ADMIN'
+          );
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={section.title}>
+              <p className="px-3 mb-1.5 text-[9px] font-bold tracking-[0.2em] uppercase text-gray-700">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {visibleItems.map(item => (
+                  <NavLink key={item.to} to={item.to} end={item.to === '/admin' || item.to === '/staff'}
+                    className={({ isActive }) => cn('nav-item', isActive && 'active')}>
+                    {item.icon}
+                    <span className="flex-1 text-[13px]">{item.label}</span>
+                    {item.alertKey === 'expired' && alerts.expired > 0 && (
+                      <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 rounded-full">{alerts.expired}</span>
+                    )}
+                    {item.alertKey === 'alerts' && (alerts.outOfStock + alerts.critical) > 0 && (
+                      <span className="bg-amber-500 text-black text-[10px] font-bold px-1.5 rounded-full">
+                        {alerts.outOfStock + alerts.critical}
+                      </span>
+                    )}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Logout */}
+      <div className="px-3 py-3 border-t border-white/06 flex-shrink-0">
+        <motion.button
+          whileHover={{ translateX: 2 }} whileTap={{ scale: 0.97 }}
+          onClick={handleLogout}
+          className="w-full nav-item text-red-400/70 hover:text-red-400 hover:bg-red-500/08"
+        >
+          <LogOut size={15} />
+          <span className="text-[13px]">Sign Out</span>
+        </motion.button>
+      </div>
+    </aside>
+  );
+};

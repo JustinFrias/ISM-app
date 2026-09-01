@@ -1,0 +1,191 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================
+   SKEUOVAULT — Global Skeuomorphic Design System
+   ============================================= */
+
+:root {
+  --skeuo-bg: #0d0f14;
+  --skeuo-panel: #22262f;
+  --skeuo-border: rgba(255, 255, 255, 0.07);
+  --skeuo-border-gold: rgba(212, 175, 55, 0.35);
+  --skeuo-text-primary: #e2e8f0;
+  --skeuo-text-secondary: #94a3b8;
+  --skeuo-text-muted: #475569;
+  --skeuo-gold: #d4af37;
+  --skeuo-amber: #f59e0b;
+  --skeuo-red: #ef4444;
+  --skeuo-green: #10b981;
+}
+
+/* ── Base Reset & Body ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--skeuo-bg);
+  color: var(--skeuo-text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(212, 175, 55, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Custom Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1c1f26;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2e39;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* ── Skeuomorphic Layer Classes ── */
+@layer components {
+
+  /* Metal Panel */
+  .skeuo-panel {
+    @apply bg-brushed-metal border rounded-xl;
+    border-color: var(--skeuo-border);
+    box-shadow:
+      0 20px 40px -8px rgba(0,0,0,0.7),
+      0 8px 16px -6px rgba(0,0,0,0.5),
+      inset 0 1px 1px rgba(255,255,255,0.10);
+  }
+
+  /* Leather Card */
+  .skeuo-leather {
+    @apply rounded-xl border;
+    background: radial-gradient(ellipse at 30% 30%, #3d2a1f 0%, #241a15 50%, #1a120e 100%);
+    border-color: rgba(61, 42, 31, 0.8);
+    box-shadow:
+      0 12px 24px -4px rgba(0,0,0,0.65),
+      inset 0 1px 0 rgba(255,255,255,0.07),
+      inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  /* Acrylic Glass Card */
+  .skeuo-glass {
+    @apply rounded-xl border backdrop-blur-sm;
+    background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 100%);
+    border-color: rgba(255,255,255,0.12);
+    box-shadow:
+      0 12px 24px -4px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  /* Gold Accent Border */
+  .skeuo-gold-border {
+    border-color: var(--skeuo-border-gold) !important;
+  }
+
+  /* Engraved Label */
+  .skeuo-label {
+    @apply text-xs font-semibold tracking-widest uppercase;
+    color: var(--skeuo-text-muted);
+    text-shadow: 0 1px 1px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06);
+  }
+
+  /* Paper Container (for invoices / print reports) */
+  .skeuo-paper {
+    background: linear-gradient(160deg, #fcfbf7 0%, #f4ede2 50%, #ede6d8 100%);
+    color: #1a1a1a;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.45), 0 8px 16px rgba(0,0,0,0.25), 2px 2px 0 rgba(0,0,0,0.10);
+  }
+
+  /* Perforated edge effect for receipts */
+  .skeuo-perforated-top {
+    mask-image: radial-gradient(circle at 50% 0%, transparent 8px, black 8px);
+    -webkit-mask-image: radial-gradient(circle at 50% 0%, transparent 8px, black 8px);
+    mask-size: 16px 16px;
+    -webkit-mask-size: 16px 16px;
+  }
+
+  /* Dot-matrix font for receipt printing */
+  .dot-matrix {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  /* Security stamp overlay */
+  .skeuo-stamp {
+    @apply absolute font-display font-black tracking-widest uppercase select-none pointer-events-none;
+    filter: opacity(0.85) saturate(1.4);
+    mix-blend-mode: multiply;
+  }
+}
+
+/* ── Page Perspective Wrapper ── */
+.page-perspective {
+  perspective: 1400px;
+  perspective-origin: 50% 45%;
+  transform-style: preserve-3d;
+}
+
+/* ── Sidebar Nav Item ── */
+.nav-item {
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer select-none;
+  color: #64748b;
+}
+.nav-item:hover {
+  color: #94a3b8;
+  background: rgba(255,255,255,0.04);
+}
+.nav-item.active {
+  color: #d4af37;
+  background: linear-gradient(135deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.05) 100%);
+  box-shadow: inset 3px 0 0 #d4af37;
+}
+
+/* ── Gauge Component ── */
+.gauge-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Print Styles ── */
+@media print {
+  body { background: white !important; }
+  .no-print { display: none !important; }
+  .skeuo-paper { box-shadow: none !important; }
+}
+
+/* ── Selection ── */
+::selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: #f0d060;
+}
+
+/* ── Focus Ring ── */
+:focus-visible {
+  outline: 2px solid rgba(212, 175, 55, 0.6);
+  outline-offset: 2px;
+}

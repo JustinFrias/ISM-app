@@ -75,24 +75,47 @@ export const SkeuoTextarea: React.FC<SkeuoTextareaProps> = ({ label, error, clas
 interface SkeuoSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  placeholder?: string;
   options: { value: string; label: string }[];
 }
-export const SkeuoSelect: React.FC<SkeuoSelectProps> = ({ label, error, options, className, id, ...props }) => (
-  <div className="flex flex-col gap-1.5">
+export const SkeuoSelect: React.FC<SkeuoSelectProps> = ({ label, error, placeholder, options, className, id, ...props }) => (
+  <div className="flex flex-col gap-1.5 relative">
     {label && <label htmlFor={id} className="skeuo-label">{label}</label>}
-    <select
-      id={id}
-      className={cn(
-        'rounded-lg px-3 py-2.5 text-sm text-gray-200 outline-none cursor-pointer appearance-none',
-        'bg-gradient-to-b from-[#22262f] to-[#1c2028] shadow-skeuo-inset',
-        'border transition-all',
-        error ? 'border-red-500/60' : 'border-white/08 focus:border-skeuo-gold/40',
-        className
-      )}
-      {...props}
-    >
-      {options.map(o => <option key={o.value} value={o.value} className="bg-[#22262f]">{o.label}</option>)}
-    </select>
+    <div className="relative flex items-center">
+      <select
+        id={id}
+        className={cn(
+          'w-full rounded-lg pl-3 pr-8 py-2.5 text-sm text-gray-200 outline-none cursor-pointer appearance-none',
+          'bg-gradient-to-b from-[#22262f] to-[#1c2028] shadow-skeuo-inset',
+          'border transition-all',
+          error ? 'border-red-500/60' : 'border-white/08 focus:border-skeuo-gold/50 focus:ring-1 focus:ring-skeuo-gold/30',
+          className
+        )}
+        {...props}
+      >
+        {placeholder && (
+          <option value="" disabled className="bg-[#22262f] text-gray-400">
+            {placeholder}
+          </option>
+        )}
+        {options.length === 0 ? (
+          <option value="" disabled className="bg-[#22262f] text-gray-500">
+            No options available
+          </option>
+        ) : (
+          options.map(o => (
+            <option key={o.value} value={o.value} className="bg-[#22262f] text-gray-100 py-1">
+              {o.label}
+            </option>
+          ))
+        )}
+      </select>
+      <div className="absolute right-3 pointer-events-none text-gray-400 flex items-center">
+        <svg className="w-4 h-4 text-skeuo-gold/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
     {error && <p className="text-xs text-red-400">⚠ {error}</p>}
   </div>
 );

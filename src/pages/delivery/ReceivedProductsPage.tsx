@@ -11,6 +11,8 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useAuditLogger } from '../../store/useAuditStore';
 import { formatCurrency } from '../../utils';
 
+import { SkeuoSearchableSelect } from '../../components/skeuomorphic/SkeuoSearchableSelect';
+
 interface ReceivedBatch { productId: string; quantity: number; expiryDate?: string; rack: string; ref: string; notes?: string; }
 
 export const ReceivedProductsPage: React.FC = () => {
@@ -21,6 +23,13 @@ export const ReceivedProductsPage: React.FC = () => {
   const [batches, setBatches] = useState<ReceivedBatch[]>([]);
   const [form, setForm] = useState<ReceivedBatch>({ productId: '', quantity: 0, rack: '', ref: '' });
   const [committed, setCommitted] = useState(false);
+
+  const productOptions = products.map(p => ({
+    value: p.id,
+    label: p.name,
+    sublabel: p.sku,
+    badge: `${p.stockAvailable} in stock`,
+  }));
 
   const addBatch = () => {
     if (!form.productId || form.quantity <= 0 || !form.ref) return;
@@ -104,8 +113,14 @@ export const ReceivedProductsPage: React.FC = () => {
           </>
         }>
         <div className="space-y-4">
-          <SkeuoSelect label="Product" id="rb-prod" value={form.productId} onChange={e => setForm(f => ({ ...f, productId: e.target.value }))}
-            options={[{ value: '', label: '— Select product —' }, ...products.map(p => ({ value: p.id, label: `${p.sku} — ${p.name}` }))]} />
+          <SkeuoSearchableSelect
+            label="Product"
+            id="rb-prod"
+            value={form.productId}
+            onChange={val => setForm(f => ({ ...f, productId: val }))}
+            options={productOptions}
+            placeholder="Search product by SKU or name..."
+          />
           <SkeuoInput label="Quantity Received" id="rb-qty" type="number" min="1" value={form.quantity || ''}
             onChange={e => setForm(f => ({ ...f, quantity: Number(e.target.value) }))} />
           <SkeuoInput label="Reference Number (PO #)" id="rb-ref" value={form.ref}

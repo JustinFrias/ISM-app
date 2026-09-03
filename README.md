@@ -1,4 +1,4 @@
-# 📦 Inventory System Management
+# 📦 Inventory Management System
 
 A modern, responsive web application built to simplify inventory tracking and streamline day-to-day operations. This system provides a centralized dashboard for monitoring product movement, reducing manual data entry errors, and ensuring optimal stock availability at all times. 
 

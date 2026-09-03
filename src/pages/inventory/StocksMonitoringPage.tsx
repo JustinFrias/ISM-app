@@ -143,40 +143,32 @@ export const StocksMonitoringPage: React.FC = () => {
         </div>
 
         {/* Product cards grid */}
-        {products.length === 0 ? (
-          <div className="skeuo-panel border border-white/08 rounded-2xl p-10 text-center text-gray-500">
-            <Warehouse size={40} className="mx-auto mb-3 text-gray-600 opacity-60" />
-            <p className="text-sm font-semibold text-gray-300">Warehouse Racks Empty</p>
-            <p className="text-xs text-gray-500 mt-1">No items currently stored. Add products to view 3D warehouse telemetry.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {products.map((p, i) => (
-              <motion.div key={p.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.03 }}
-                className="skeuo-panel border border-white/08 rounded-xl p-3 hover:border-skeuo-gold/20 transition-all">
-                {/* Stock bar */}
-                <div className="mb-2">
-                  <div className="flex justify-between text-[10px] mb-1">
-                    <span className="text-gray-600 font-mono">{p.sku}</span>
-                    <span className={`font-bold font-mono ${p.stockAvailable === 0 ? 'text-red-400' : p.stockAvailable <= p.criticalLevel ? 'text-amber-400' : 'text-emerald-400'}`}>{p.stockAvailable}</span>
-                  </div>
-                  <div className="h-1.5 bg-black/50 rounded-full overflow-hidden shadow-skeuo-inset">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (p.stockAvailable / Math.max(p.criticalLevel * 3, 1)) * 100)}%` }}
-                      transition={{ duration: 0.8, delay: i * 0.03 + 0.2 }}
-                      className="h-full rounded-full"
-                      style={{ background: p.stockAvailable === 0 || p.status === 'EXPIRED' ? '#ef4444' : p.stockAvailable <= p.criticalLevel ? '#f59e0b' : '#10b981' }} />
-                  </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {products.map((p, i) => (
+            <motion.div key={p.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.03 }}
+              className="skeuo-panel border border-white/08 rounded-xl p-3 hover:border-skeuo-gold/20 transition-all">
+              {/* Stock bar */}
+              <div className="mb-2">
+                <div className="flex justify-between text-[10px] mb-1">
+                  <span className="text-gray-600 font-mono">{p.sku}</span>
+                  <span className={`font-bold font-mono ${p.stockAvailable === 0 ? 'text-red-400' : p.stockAvailable <= p.criticalLevel ? 'text-amber-400' : 'text-emerald-400'}`}>{p.stockAvailable}</span>
                 </div>
-                <p className="text-xs font-medium text-gray-200 truncate">{p.name}</p>
-                <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[10px] text-gray-600">{p.storageRackId}</span>
-                  <SkeuoBadge label={p.status.split('_')[0]} status={p.status} dot />
+                <div className="h-1.5 bg-black/50 rounded-full overflow-hidden shadow-skeuo-inset">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, (p.stockAvailable / Math.max(p.criticalLevel * 3, 1)) * 100)}%` }}
+                    transition={{ duration: 0.8, delay: i * 0.03 + 0.2 }}
+                    className="h-full rounded-full"
+                    style={{ background: p.stockAvailable === 0 || p.status === 'EXPIRED' ? '#ef4444' : p.stockAvailable <= p.criticalLevel ? '#f59e0b' : '#10b981' }} />
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+              </div>
+              <p className="text-xs font-medium text-gray-200 truncate">{p.name}</p>
+              <div className="flex items-center justify-between mt-1.5">
+                <span className="text-[10px] text-gray-600">{p.storageRackId}</span>
+                <SkeuoBadge label={p.status.split('_')[0]} status={p.status} dot />
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );

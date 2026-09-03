@@ -129,26 +129,10 @@ export const InventoryOverviewPage: React.FC = () => {
                   </motion.tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="px-6 py-16 text-center text-gray-500">
-                      <Package size={40} className="mx-auto mb-3 text-gray-600 opacity-60" />
-                      <p className="text-sm font-semibold text-gray-300">
-                        {products.length === 0 ? 'No products in inventory yet' : 'No products match your filters'}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                        {products.length === 0
-                          ? 'Get started by creating your first product item to begin tracking stock and movements.'
-                          : 'Try changing or clearing your search and filter criteria.'}
-                      </p>
-                      {products.length === 0 && (
-                        <div className="mt-4">
-                          <SkeuoButton variant="gold" size="sm" onClick={openAdd}>
-                            <Plus size={14} /> Add First Product
-                          </SkeuoButton>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
+                  <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-600">
+                    <Package size={32} className="mx-auto mb-2 opacity-40" />
+                    No products match your filters.
+                  </td></tr>
                 )}
               </tbody>
             </table>

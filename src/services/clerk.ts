@@ -13,14 +13,24 @@ export const isClerkConfigured = Boolean(
 export function resolveUserRole(clerkUser: any): 'ADMIN' | 'STAFF' {
   if (!clerkUser) return 'STAFF';
 
-  // 1. Check custom public metadata on Clerk User
+  // 1. Check custom metadata on Clerk User (set permanently during sign-up)
   const metaRole = clerkUser.publicMetadata?.role || clerkUser.unsafeMetadata?.role;
   if (metaRole === 'ADMIN' || metaRole === 'admin') return 'ADMIN';
   if (metaRole === 'STAFF' || metaRole === 'staff') return 'STAFF';
 
-  // 2. Check if user is the primary admin email
-  const primaryEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
-  if (primaryEmail.toLowerCase().includes('admin')) {
+  // 2. Check persistent localStorage by email or user ID
+  const primaryEmail = (clerkUser.primaryEmailAddress?.emailAddress || '').toLowerCase();
+  if (primaryEmail) {
+    const savedRole = localStorage.getItem(`ism_user_role_${primaryEmail}`);
+    if (savedRole === 'ADMIN' || savedRole === 'STAFF') return savedRole as 'ADMIN' | 'STAFF';
+  }
+  if (clerkUser.id) {
+    const savedRole = localStorage.getItem(`ism_user_role_${clerkUser.id}`);
+    if (savedRole === 'ADMIN' || savedRole === 'STAFF') return savedRole as 'ADMIN' | 'STAFF';
+  }
+
+  // 3. Fallback: Check if email explicitly has admin
+  if (primaryEmail.includes('admin')) {
     return 'ADMIN';
   }
 
@@ -64,6 +74,9 @@ export const skeuoClerkAppearance = {
         backgroundColor: '#272d3b',
         borderColor: 'rgba(212, 175, 55, 0.4)',
       },
+    },
+    'socialButtonsBlockButton[data-provider="facebook"]': {
+      display: 'none !important',
     },
     formButtonPrimary: {
       background: 'linear-gradient(135deg, #f5d77f 0%, #d4af37 50%, #997b1e 100%)',

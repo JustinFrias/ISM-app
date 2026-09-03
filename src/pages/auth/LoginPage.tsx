@@ -118,7 +118,7 @@ export const LoginPage: React.FC = () => {
                   routing="path"
                   path="/login"
                   signUpUrl="/sign-up"
-                  fallbackRedirectUrl="/admin"
+                  fallbackRedirectUrl="/"
                   appearance={skeuoClerkAppearance}
                 />
               </div>

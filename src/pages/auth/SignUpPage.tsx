@@ -141,13 +141,6 @@ export const SignUpPage: React.FC = () => {
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
-  // If signUp email is already marked as verified, allow proceeding directly
-  useEffect(() => {
-    if (signUp?.verifications?.emailAddress?.status === 'verified') {
-      setStep('choose-role');
-    }
-  }, [signUp?.verifications?.emailAddress?.status]);
-
   /* ── Step 1: submit details & send OTP ── */
   const handleDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -548,25 +541,39 @@ export const SignUpPage: React.FC = () => {
                     )}
                   </button>
 
-                  {/* Resend */}
-                  <div className="flex items-center justify-center gap-2">
+                  {/* Resend & Back */}
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={handleResend}
+                        disabled={!canResend}
+                        className={`flex items-center gap-1.5 text-xs font-semibold transition-all ${
+                          canResend
+                            ? 'text-skeuo-gold hover:text-[#f5d77f] cursor-pointer'
+                            : 'text-gray-600 cursor-not-allowed'
+                        }`}
+                      >
+                        <RotateCcw size={12} />
+                        Resend Code
+                      </button>
+                      {!canResend && (
+                        <span className="text-xs text-gray-500">
+                          in <span className="text-skeuo-gold font-mono font-bold">{countdown}s</span>
+                        </span>
+                      )}
+                    </div>
+
                     <button
-                      onClick={handleResend}
-                      disabled={!canResend}
-                      className={`flex items-center gap-1.5 text-xs font-semibold transition-all ${
-                        canResend
-                          ? 'text-skeuo-gold hover:text-[#f5d77f] cursor-pointer'
-                          : 'text-gray-600 cursor-not-allowed'
-                      }`}
+                      type="button"
+                      onClick={() => {
+                        setStep('details');
+                        setOtp('');
+                        setOtpError('');
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-1 mx-auto"
                     >
-                      <RotateCcw size={12} />
-                      Resend Code
+                      <ArrowLeft size={12} /> Palitan ang email o detalye
                     </button>
-                    {!canResend && (
-                      <span className="text-xs text-gray-500">
-                        in <span className="text-skeuo-gold font-mono font-bold">{countdown}s</span>
-                      </span>
-                    )}
                   </div>
                 </motion.div>
               )}

@@ -33,7 +33,7 @@ export const InventoryOverviewPage: React.FC = () => {
     return matchSearch && matchStatus && matchCat;
   });
 
-  const openAdd = () => { setEditProduct(null); setForm({ categoryId: categories[0]?.id || '' }); setShowModal(true); };
+  const openAdd = () => { setEditProduct(null); setForm({}); setShowModal(true); };
   const openEdit = (p: Product) => { setEditProduct(p); setForm(p); setShowModal(true); };
 
   const handleSave = () => {
@@ -173,7 +173,6 @@ export const InventoryOverviewPage: React.FC = () => {
           <SkeuoInput label="SKU" id="psku" value={form.sku || ''} onChange={e => setForm(f => ({ ...f, sku: e.target.value }))} required />
           <SkeuoInput label="Barcode" id="pbarcode" value={form.barcode || ''} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} />
           <SkeuoSelect label="Category" id="pcat" value={form.categoryId || ''} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
-            placeholder="Select Category..."
             options={categories.map(c => ({ value: c.id, label: c.name }))} />
           <SkeuoSelect label="Unit" id="punit" value={form.unit || 'PCS'} onChange={e => setForm(f => ({ ...f, unit: e.target.value as UnitOfMeasure }))}
             options={UNITS.map(u => ({ value: u, label: u }))} />

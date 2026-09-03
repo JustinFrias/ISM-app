@@ -11,8 +11,6 @@ import { useAuditLogger } from '../../store/useAuditStore';
 import { formatDateTime } from '../../utils';
 import type { MovementType } from '../../types';
 
-import { SkeuoSearchableSelect, SearchableOption } from '../../components/skeuomorphic/SkeuoSearchableSelect';
-
 export const StockInOutPage: React.FC = () => {
   const { products, movements, adjustStock } = useInventoryStore();
   const currentUser = useAuthStore(s => s.currentUser);
@@ -26,14 +24,6 @@ export const StockInOutPage: React.FC = () => {
   const [done, setDone] = useState(false);
 
   const selectedProduct = products.find(p => p.id === productId);
-
-  const productOptions: SearchableOption[] = products.map(p => ({
-    value: p.id,
-    label: p.name,
-    sublabel: p.sku,
-    badge: `${p.stockAvailable} available`,
-    badgeColor: p.stockAvailable === 0 ? 'red' : p.stockAvailable <= p.criticalLevel ? 'amber' : 'emerald',
-  }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,15 +44,9 @@ export const StockInOutPage: React.FC = () => {
           <div className="skeuo-panel border border-white/08 rounded-2xl p-6">
             <h3 className="font-display font-bold text-skeuo-chrome mb-5">Stock Adjustment</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <SkeuoSearchableSelect
-                label="Product"
-                id="sa-product"
-                value={productId}
-                onChange={setProductId}
-                options={productOptions}
-                placeholder="Search product by SKU or name..."
-                required
-              />
+              <SkeuoSelect label="Product" id="sa-product" value={productId} onChange={e => setProductId(e.target.value)}
+                options={[{ value: '', label: '— Select a product —' }, ...products.map(p => ({ value: p.id, label: `${p.sku} — ${p.name} (${p.stockAvailable} available)` }))]}
+                required />
 
               {/* Type selectors — physical lever switches */}
               <div>
@@ -122,16 +106,7 @@ export const StockInOutPage: React.FC = () => {
               <h3 className="font-display font-semibold text-skeuo-chrome">Recent Movement History</h3>
             </div>
             <div className="overflow-y-auto max-h-[480px] divide-y divide-white/04">
-              {movements
-                .filter(mv => {
-                  if (mv.type === 'EXPIRED_DISPOSAL') {
-                    const prod = products.find(p => p.id === mv.productId);
-                    if (prod && prod.stockAvailable > 0) return false;
-                  }
-                  return true;
-                })
-                .slice(0, 20)
-                .map((mv, i) => (
+              {movements.slice(0, 20).map((mv, i) => (
                 <motion.div key={mv.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                   className="px-6 py-3 flex items-center gap-3">
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0

@@ -13,8 +13,6 @@ import { formatCurrency, generateDeliveryNumber } from '../../utils';
 import type { DeliveryItem } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
 
-import { SkeuoSearchableSelect } from '../../components/skeuomorphic/SkeuoSearchableSelect';
-
 export const AddDeliveryPage: React.FC = () => {
   const navigate = useNavigate();
   const { addDelivery } = useDeliveryStore();
@@ -30,14 +28,6 @@ export const AddDeliveryPage: React.FC = () => {
   const [items, setItems] = useState<DeliveryItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [qty, setQty] = useState('');
-
-  const productOptions = products.filter(p => p.stockAvailable > 0).map(p => ({
-    value: p.id,
-    label: p.name,
-    sublabel: p.sku,
-    badge: `${p.stockAvailable} avail`,
-    badgeColor: 'emerald' as const,
-  }));
 
   const addItem = () => {
     const prod = products.find(p => p.id === selectedProduct);
@@ -120,12 +110,11 @@ export const AddDeliveryPage: React.FC = () => {
             <h3 className="font-display font-semibold text-skeuo-chrome mb-4">Line Items</h3>
             <div className="flex gap-3 mb-5">
               <div className="flex-1">
-                <SkeuoSearchableSelect
-                  value={selectedProduct}
-                  onChange={setSelectedProduct}
-                  options={productOptions}
-                  placeholder="Search product by SKU or name..."
-                />
+                <SkeuoSelect value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)}
+                  options={[{ value: '', label: '— Select product —' },
+                    ...products.filter(p => p.stockAvailable > 0).map(p => ({
+                      value: p.id, label: `${p.sku} — ${p.name} (${p.stockAvailable} available)`
+                    }))]} />
               </div>
               <div className="w-28">
                 <SkeuoInput value={qty} onChange={e => setQty(e.target.value)} type="number" min="1" placeholder="Qty" />

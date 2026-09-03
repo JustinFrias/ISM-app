@@ -9,8 +9,6 @@ import { SkeuoInput } from '../../components/skeuomorphic/SkeuoInput';
 import { isClerkConfigured, skeuoClerkAppearance } from '../../services/clerk';
 import { BrandLogo } from '../../components/common/BrandLogo';
 
-import { FloatingParticles } from '../../components/common/FloatingParticles';
-
 export const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -39,30 +37,27 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-skeuo-bg relative overflow-hidden p-4">
-      {/* Animated Ambient Background & Particles */}
-      <FloatingParticles />
+      {/* Ambient background glows */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-skeuo-gold/04 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-skeuo-neonBlue/04 rounded-full blur-3xl" />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.025]"
+          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        whileHover={{ y: -4, transition: { duration: 0.3 } }}
         transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-        className="relative w-full max-w-md z-10"
+        className="relative w-full max-w-md"
       >
-        {/* Animated Vault outer rim glow */}
-        <motion.div
-          animate={{ opacity: [0.2, 0.45, 0.2], scale: [0.99, 1.01, 0.99] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -inset-2 rounded-[30px] bg-gradient-to-r from-amber-500/30 via-yellow-400/20 to-amber-600/30 blur-md pointer-events-none"
-        />
+        {/* Vault door outer rim */}
+        <div className="absolute -inset-2 rounded-[28px] bg-metallic-gold opacity-20 blur-sm" />
 
-        <div className="relative skeuo-panel border border-skeuo-gold/25 rounded-3xl overflow-hidden shadow-skeuo-vault">
-          {/* Animated Sweeping Light Beam on Top Border */}
-          <motion.span
-            animate={{ x: ['-100%', '200%'] }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-0 left-0 w-1/2 h-[1.5px] bg-gradient-to-r from-transparent via-amber-300 to-transparent z-20 pointer-events-none"
-          />
+        <div className="relative skeuo-panel border border-skeuo-gold/20 rounded-3xl overflow-hidden shadow-skeuo-vault">
+          {/* Top specular */}
+          <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-skeuo-gold/40 to-transparent" />
 
           {/* Header */}
           <div className="px-8 pt-8 pb-5 text-center border-b border-white/06">
@@ -169,36 +164,25 @@ export const LoginPage: React.FC = () => {
                 </SkeuoButton>
 
                 {/* Demo credentials */}
-                <div className="rounded-xl bg-black/40 border border-white/08 p-3.5 space-y-2 mt-4 backdrop-blur-md">
-                  <p className="skeuo-label text-center mb-1.5 flex items-center justify-center gap-1.5 text-amber-400/90">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Demo Credentials (Click to Auto-fill)
-                  </p>
+                <div className="rounded-xl bg-black/30 border border-white/06 p-3 space-y-2 mt-4">
+                  <p className="skeuo-label text-center mb-1.5">Demo Credentials</p>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <motion.button
-                      whileHover={{ scale: 1.03, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-                      whileTap={{ scale: 0.97 }}
+                    <button
                       type="button"
                       onClick={() => { setUsername('admin'); setPassword('admin1234'); }}
-                      className="bg-white/04 rounded-xl p-2.5 border border-skeuo-gold/20 text-left transition-all shadow-sm hover:shadow-skeuo-led-amber"
+                      className="bg-white/04 hover:bg-white/08 rounded-lg p-2 border border-white/06 text-left transition-colors"
                     >
-                      <p className="text-skeuo-gold font-semibold mb-0.5 flex items-center gap-1">
-                        <span>⚡</span> Admin
-                      </p>
+                      <p className="text-skeuo-gold font-semibold mb-0.5">Admin</p>
                       <p className="text-gray-400 font-mono text-[11px]">admin / admin1234</p>
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.03, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-                      whileTap={{ scale: 0.97 }}
+                    </button>
+                    <button
                       type="button"
                       onClick={() => { setUsername('staff01'); setPassword('staff1234'); }}
-                      className="bg-white/04 rounded-xl p-2.5 border border-emerald-500/20 text-left transition-all shadow-sm hover:shadow-skeuo-led-green"
+                      className="bg-white/04 hover:bg-white/08 rounded-lg p-2 border border-white/06 text-left transition-colors"
                     >
-                      <p className="text-emerald-400 font-semibold mb-0.5 flex items-center gap-1">
-                        <span>📦</span> Staff
-                      </p>
+                      <p className="text-emerald-400 font-semibold mb-0.5">Staff</p>
                       <p className="text-gray-400 font-mono text-[11px]">staff01 / staff1234</p>
-                    </motion.button>
+                    </button>
                   </div>
                 </div>
               </form>

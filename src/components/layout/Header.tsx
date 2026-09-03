@@ -20,13 +20,12 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
   const products = useInventoryStore(s => s.products);
   const getAlertCounts = useInventoryStore(s => s.getAlertCounts);
   const alerts = getAlertCounts();
-  // Filter alert items
-  const now = new Date();
-  const oosItems = products.filter(p => p.stockAvailable === 0 && !(p.expiryDate && new Date(p.expiryDate) < now));
-  const criticalItems = products.filter(p => p.stockAvailable > 0 && p.stockAvailable <= p.criticalLevel && !(p.expiryDate && new Date(p.expiryDate) < now));
-  const expiredItems = products.filter(p => p.stockAvailable > 0 && (p.status === 'EXPIRED' || (p.expiryDate && new Date(p.expiryDate) < now)));
+  const totalAlerts = alerts.outOfStock + alerts.critical + alerts.expired;
 
-  const totalAlerts = oosItems.length + criticalItems.length + expiredItems.length;
+  // Filter alert items
+  const oosItems = products.filter(p => p.status === 'OUT_OF_STOCK');
+  const criticalItems = products.filter(p => p.status === 'CRITICAL');
+  const expiredItems = products.filter(p => p.status === 'EXPIRED');
 
   // Click outside to close
   useEffect(() => {

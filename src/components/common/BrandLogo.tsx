@@ -26,28 +26,24 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   return (
     <div className={`relative flex items-center justify-center ${s.box} ${className}`}>
       {/* Dynamic Cyber Ambient Glow */}
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -inset-2.5 rounded-2xl bg-gradient-to-tr from-skeuo-gold/30 via-blue-500/25 to-amber-400/30 blur-lg pointer-events-none"
-      />
+      <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-skeuo-gold/20 via-blue-500/15 to-amber-400/20 blur-md pointer-events-none" />
 
       {/* 3D Skeuomorphic Chassis Container */}
       <motion.div
-        animate={animated ? { y: [0, -6, 0], rotateY: [0, 8, 0, -8, 0], rotateX: [0, 4, 0, -4, 0] } : undefined}
-        transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-        style={{ perspective: 800, transformStyle: 'preserve-3d' }}
-        className="relative w-full h-full rounded-2xl bg-gradient-to-b from-[#2a2f3a] via-[#1a1d24] to-[#101217] border border-white/20 shadow-[0_16px_32px_-8px_rgba(0,0,0,0.9),inset_0_1px_1px_rgba(255,255,255,0.3),0_0_0_1px_rgba(212,175,55,0.4)] flex items-center justify-center overflow-hidden"
+        animate={animated ? { y: [0, -3, 0], rotateY: [0, 6, 0, -6, 0] } : undefined}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        style={{ perspective: 700, transformStyle: 'preserve-3d' }}
+        className="relative w-full h-full rounded-2xl bg-gradient-to-b from-[#252932] via-[#1a1d24] to-[#101217] border border-white/15 shadow-[0_12px_24px_-6px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2),0_0_0_1px_rgba(212,175,55,0.3)] flex items-center justify-center overflow-hidden"
       >
         {/* Top Metallic Specular Edge */}
-        <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+        <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
 
         {/* Animated Holographic Laser Scan Line */}
         {showScanLine && (
           <motion.div
-            animate={{ top: ['-20%', '120%'], opacity: [0, 1, 1, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute inset-x-0 h-[2.5px] bg-gradient-to-r from-transparent via-amber-300 to-transparent opacity-90 shadow-[0_0_12px_#f59e0b] pointer-events-none z-20"
+            animate={{ top: ['-20%', '120%'] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: 'linear' }}
+            className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-amber-300 to-transparent opacity-75 shadow-[0_0_8px_#f59e0b] pointer-events-none z-20"
           />
         )}
 

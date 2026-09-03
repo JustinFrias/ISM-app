@@ -1,124 +1,146 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSignUp, useUser } from '@clerk/clerk-react';
+import { useSignUp } from '@clerk/clerk-react';
 import {
   User, Mail, Lock, Eye, EyeOff, Shield, CheckCircle2,
-  ArrowRight, RotateCcw, KeyRound, ShieldAlert, Check,
-  Boxes, Settings, ArrowLeft
+  ArrowRight, RotateCcw, KeyRound
 } from 'lucide-react';
 import { BrandLogo } from '../../components/common/BrandLogo';
 import { useAuthStore } from '../../store/useAuthStore';
 
-/* ─── OTP digit input ─────────────────────────────────────────── */
+/* ─── 6-Digit OTP Box Component ─────────────────────────────────────────── */
 const OtpInput: React.FC<{
   value: string;
-  onChange: (v: string) => void;
+  onChange: (val: string) => void;
   disabled?: boolean;
 }> = ({ value, onChange, disabled }) => {
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Array of exactly 6 slots
   const digits = Array.from({ length: 6 }, (_, i) => value[i] || '');
 
   useEffect(() => {
-    refs.current[0]?.focus();
+    // Auto focus first empty input on mount
+    const firstEmptyIndex = digits.findIndex(d => !d);
+    const targetIdx = firstEmptyIndex === -1 ? 5 : firstEmptyIndex;
+    inputRefs.current[targetIdx]?.focus();
   }, []);
 
-  const handleKey = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       e.preventDefault();
       const currentDigits = [...digits];
-      if (currentDigits[i]) {
-        currentDigits[i] = '';
+      if (currentDigits[index]) {
+        currentDigits[index] = '';
         onChange(currentDigits.join(''));
-      } else if (i > 0) {
-        currentDigits[i - 1] = '';
+      } else if (index > 0) {
+        currentDigits[index - 1] = '';
         onChange(currentDigits.join(''));
-        refs.current[i - 1]?.focus();
+        inputRefs.current[index - 1]?.focus();
       }
-    } else if (e.key === 'ArrowLeft' && i > 0) {
-      refs.current[i - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && i < 5) {
-      refs.current[i + 1]?.focus();
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleChange = (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const char = e.target.value.replace(/\D/g, '').slice(-1);
+  const handleInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value.replace(/\D/g, '');
+    if (!rawVal) {
+      const currentDigits = [...digits];
+      currentDigits[index] = '';
+      onChange(currentDigits.join(''));
+      return;
+    }
+
+    const lastChar = rawVal.slice(-1);
     const currentDigits = [...digits];
-    currentDigits[i] = char;
-    onChange(currentDigits.join(''));
-    if (char && i < 5) {
-      refs.current[i + 1]?.focus();
+    currentDigits[index] = lastChar;
+    const newCode = currentDigits.join('');
+    onChange(newCode);
+
+    // Auto move to next input
+    if (index < 5) {
+      inputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (!pasted) return;
-    onChange(pasted);
-    const nextFocusIndex = Math.min(pasted.length, 5);
-    refs.current[nextFocusIndex]?.focus();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pastedData) {
+      onChange(pastedData);
+      const nextFocus = Math.min(pastedData.length, 5);
+      inputRefs.current[nextFocus]?.focus();
+    }
   };
 
   return (
-    <div className="flex gap-2 justify-center" onPaste={handlePaste}>
-      {digits.map((d, i) => (
-        <input
-          key={i}
-          ref={el => { refs.current[i] = el; }}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={d}
-          disabled={disabled}
-          onChange={e => handleChange(i, e)}
-          onKeyDown={e => handleKey(i, e)}
-          className={`
-            w-11 h-14 text-center text-xl font-bold rounded-xl border transition-all outline-none
-            bg-black/40 text-white
-            ${d ? 'border-skeuo-gold shadow-[0_0_12px_rgba(212,175,55,0.3)]' : 'border-white/10'}
-            focus:border-skeuo-gold focus:shadow-[0_0_16px_rgba(212,175,55,0.4)]
-            disabled:opacity-40
-          `}
-          style={{ caretColor: '#d4af37' }}
-        />
-      ))}
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex gap-2 sm:gap-3 justify-center" onPaste={handlePaste}>
+        {digits.map((digit, i) => (
+          <input
+            key={i}
+            ref={el => { inputRefs.current[i] = el; }}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={1}
+            value={digit}
+            disabled={disabled}
+            onChange={e => handleInputChange(i, e)}
+            onKeyDown={e => handleKeyDown(i, e)}
+            autoFocus={i === 0}
+            className={`
+              w-11 h-14 sm:w-12 sm:h-15 text-center text-2xl font-mono font-bold rounded-xl border-2 transition-all outline-none
+              bg-[#0e1117] text-white shadow-inner
+              ${digit
+                ? 'border-skeuo-gold bg-[#161a22] text-skeuo-gold shadow-[0_0_14px_rgba(212,175,55,0.4)]'
+                : 'border-white/20 hover:border-white/40'
+              }
+              focus:border-skeuo-gold focus:bg-[#161a22] focus:shadow-[0_0_16px_rgba(212,175,55,0.5)]
+              disabled:opacity-40 disabled:cursor-not-allowed
+            `}
+            style={{ caretColor: '#d4af37' }}
+          />
+        ))}
+      </div>
+      <p className="text-[11px] text-gray-500 font-mono mt-1">
+        Type or paste the 6-digit code sent to your inbox
+      </p>
     </div>
   );
 };
 
-/* ─── Main Page ───────────────────────────────────────────────── */
-type Step = 'details' | 'verify' | 'choose-role' | 'done';
+/* ─── Main SignUp Page ───────────────────────────────────────────────── */
+type Step = 'details' | 'verify' | 'done';
 
 export const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
   const { signUp, setActive, isLoaded } = useSignUp();
-  const { user } = useUser();
   const setClerkUser = useAuthStore(s => s.setClerkUser);
 
-  // Step
+  // Step state
   const [step, setStep] = useState<Step>('details');
 
   // Form fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // OTP
+  // OTP fields
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [verifying, setVerifying] = useState(false);
 
-  // Role Selection
-  const [selectedRole, setSelectedRole] = useState<'ADMIN' | 'STAFF'>('STAFF');
-  const [savingRole, setSavingRole] = useState(false);
-
-  // Countdown
+  // Countdown timer (60s)
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -141,211 +163,185 @@ export const SignUpPage: React.FC = () => {
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
-  /* ── Step 1: submit details & send OTP ── */
+  /* ── Helper to Complete Authentication and Redirect ── */
+  const completeSessionAndEnter = async (sessionId?: string | null, userId?: string | null) => {
+    if (sessionId && setActive) {
+      await setActive({ session: sessionId });
+    }
+
+    const finalUsername = (username.trim() || email.split('@')[0] || 'admin').toLowerCase();
+
+    // Synchronize immediately to Zustand store so protected routes unlock
+    setClerkUser({
+      id: userId || 'admin-user',
+      username: finalUsername,
+      fullName: `${firstName} ${lastName}`.trim() || 'Admin User',
+      email: email,
+      role: 'ADMIN',
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+    });
+
+    setStep('done');
+
+    // Direct redirect to ISM dashboard
+    setTimeout(() => {
+      navigate('/admin', { replace: true });
+    }, 1200);
+  };
+
+  /* ── Step 1: Submit Details & Request OTP ── */
   const handleDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
+    if (!isLoaded || !signUp) return;
     setError('');
     setLoading(true);
+
     try {
-      await signUp!.create({
+      const rawUser = (username.trim() || email.split('@')[0] || 'user')
+        .replace(/[^a-zA-Z0-9_]/g, '')
+        .toLowerCase()
+        .slice(0, 18);
+      const safeUsername = rawUser.length >= 4 ? rawUser : (rawUser + '1234').slice(0, 18);
+
+      await signUp.create({
         firstName,
         lastName,
         emailAddress: email,
+        username: safeUsername,
         password,
       });
-      await signUp!.prepareEmailAddressVerification({ strategy: 'email_code' });
+
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setStep('verify');
       startCountdown();
     } catch (err: any) {
-      const msg = err.errors?.[0]?.message || 'Sign-up failed. Please try again.';
-      setError(msg);
+      setError(err.errors?.[0]?.message || err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  /* ── Step 2: verify OTP ── */
+  /* ── Step 2: Verify OTP Code & Handle missing_requirements ── */
   const handleVerify = async () => {
-    if (!otp.trim()) return;
+    const cleanOtp = otp.trim();
+    if (cleanOtp.length < 6 || verifying || !isLoaded || !signUp) return;
+
     setOtpError('');
     setVerifying(true);
+
     try {
-      // Check if already complete
-      if (signUp?.status === 'complete' || (signUp?.verifications?.emailAddress as any)?.status === 'verified') {
-        const sid = signUp?.createdSessionId;
-        if (sid) {
-          try {
-            await setActive!({ session: sid });
-          } catch {}
-        }
-        setStep('choose-role');
+      // 1. Attempt verification with the 6-digit code
+      let result = await signUp.attemptEmailAddressVerification({ code: cleanOtp });
+
+      // 2. If already complete, log in immediately
+      if (result.status === 'complete') {
+        await completeSessionAndEnter(result.createdSessionId, result.createdUserId);
         return;
       }
 
-      const result = await signUp!.attemptEmailAddressVerification({ code: otp.trim() });
-      const emailVerified =
-        (result.verifications?.emailAddress as any)?.status === 'verified' ||
-        (signUp?.verifications?.emailAddress as any)?.status === 'verified';
-
-      // If missing requirements such as username, auto-resolve
+      // 3. If missing_requirements (e.g. Clerk instance requires username or name)
       if (result.status === 'missing_requirements') {
         const missing = (result as any).missingFields || [];
-        if (missing.includes('username')) {
+
+        if (missing.length > 0) {
+          const updatePayload: Record<string, string> = {};
+
+          if (missing.includes('username')) {
+            const rawUser = (username.trim() || email.split('@')[0] || 'user')
+              .replace(/[^a-zA-Z0-9_]/g, '')
+              .toLowerCase()
+              .slice(0, 18);
+            updatePayload.username = rawUser.length >= 4 ? rawUser : (rawUser + '1234').slice(0, 18);
+          }
+
+          if (missing.includes('first_name')) updatePayload.firstName = firstName || 'User';
+          if (missing.includes('last_name')) updatePayload.lastName = lastName || 'Admin';
+
           try {
-            const fallbackUsername = (
-              email.split('@')[0] + '_' + Math.floor(100 + Math.random() * 900)
-            ).replace(/[^a-zA-Z0-9_]/g, '');
-            const updated = await signUp!.update({ username: fallbackUsername });
-            if (updated.createdSessionId) {
-              await setActive!({ session: updated.createdSessionId });
+            result = await signUp.update(updatePayload);
+          } catch (updateErr: any) {
+            // In case username collided, append random suffix
+            if (updatePayload.username) {
+              updatePayload.username = `${updatePayload.username.slice(0, 12)}_${Math.floor(100 + Math.random() * 900)}`;
+              result = await signUp.update(updatePayload);
             }
-          } catch (unameErr) {
-            console.warn('Auto username assignment notice:', unameErr);
+          }
+
+          if (result.status === 'complete') {
+            await completeSessionAndEnter(result.createdSessionId, result.createdUserId);
+            return;
           }
         }
-      }
 
-      const sessionId = result.createdSessionId || signUp?.createdSessionId;
-      if (sessionId) {
-        try {
-          await setActive!({ session: sessionId });
-        } catch (sErr) {
-          console.warn('Session activation notice:', sErr);
+        // If session was created despite missing_requirements
+        if (result.createdSessionId) {
+          await completeSessionAndEnter(result.createdSessionId, result.createdUserId);
+          return;
         }
-      }
 
-      // If the email code was valid & verified, proceed to role selection
-      if (result.status === 'complete' || emailVerified) {
-        setStep('choose-role');
+        const remainingMissing = (result as any).missingFields || [];
+        setOtpError(`Required fields missing: ${remainingMissing.join(', ') || result.status}`);
       } else {
-        // Fallback: If no explicit failure exception was thrown, accept the code
-        setStep('choose-role');
+        setOtpError(`Verification status: ${result.status}`);
       }
     } catch (err: any) {
-      const msg = err.errors?.[0]?.message || err.message || '';
-      // If code was already verified, transition smoothly to role selection
-      if (
-        msg.toLowerCase().includes('already verified') ||
-        err.errors?.[0]?.code === 'already_verified' ||
-        (signUp?.verifications?.emailAddress as any)?.status === 'verified'
-      ) {
-        const sid = signUp?.createdSessionId;
-        if (sid) {
-          try {
-            await setActive!({ session: sid });
-          } catch {}
-        }
-        setStep('choose-role');
-        return;
-      }
-      setOtpError(msg || 'Invalid code. Please try again.');
+      setOtpError(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || 'Invalid or expired verification code. Please check and try again.');
     } finally {
       setVerifying(false);
     }
   };
 
-  /* ── Resend OTP ── */
+  /* ── Resend Code ── */
   const handleResend = async () => {
-    if (!canResend) return;
+    if (!canResend || !isLoaded || !signUp) return;
     setOtpError('');
     setOtp('');
+
     try {
-      await signUp!.prepareEmailAddressVerification({ strategy: 'email_code' });
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       startCountdown();
     } catch (err: any) {
-      setOtpError(err.errors?.[0]?.message || 'Failed to resend code.');
+      setOtpError(err.errors?.[0]?.message || 'Failed to resend verification code.');
     }
   };
 
-  /* ── Auto-verify when 6 digits filled ── */
+  /* ── Auto-submit verification once all 6 digits are entered ── */
   useEffect(() => {
-    if (otp.replace(/\s/g, '').length === 6 && step === 'verify') {
+    if (otp.replace(/\D/g, '').length === 6 && step === 'verify' && !verifying) {
       handleVerify();
     }
-  }, [otp]);
+  }, [otp, step]);
 
-  /* ── Step 3: Confirm Role & Finalize Account ── */
-  const handleConfirmRole = async () => {
-    setSavingRole(true);
-    const targetEmail = (email || user?.primaryEmailAddress?.emailAddress || signUp?.emailAddress || '').toLowerCase();
-    const userId = user?.id || signUp?.createdUserId || `user_${Date.now()}`;
-
-    try {
-      // 1. Persist permanently to Clerk User metadata if user instance is ready
-      if (user) {
-        await user.update({
-          unsafeMetadata: {
-            ...user.unsafeMetadata,
-            role: selectedRole,
-            roleAssignedAt: new Date().toISOString(),
-          },
-        });
-      }
-
-      // 2. Persist to localStorage by email and userId as permanent anchor
-      if (targetEmail) {
-        localStorage.setItem(`ism_user_role_${targetEmail}`, selectedRole);
-      }
-      if (userId) {
-        localStorage.setItem(`ism_user_role_${userId}`, selectedRole);
-      }
-
-      // 3. Update Zustand auth store
-      setClerkUser({
-        id: userId,
-        username: user?.username || targetEmail.split('@')[0] || (selectedRole === 'ADMIN' ? 'admin' : 'staff'),
-        fullName: user?.fullName || `${firstName} ${lastName}`.trim() || 'Authorized User',
-        email: targetEmail,
-        role: selectedRole,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      });
-
-      setStep('done');
-
-      // Navigate to destination dashboard
-      setTimeout(() => {
-        navigate(selectedRole === 'ADMIN' ? '/admin' : '/staff', { replace: true });
-      }, 1500);
-    } catch (err: any) {
-      console.error('Error saving role:', err);
-      // Fallback: still persist locally and navigate
-      if (targetEmail) {
-        localStorage.setItem(`ism_user_role_${targetEmail}`, selectedRole);
-      }
-      setStep('done');
-      setTimeout(() => {
-        navigate(selectedRole === 'ADMIN' ? '/admin' : '/staff', { replace: true });
-      }, 1500);
-    } finally {
-      setSavingRole(false);
-    }
-  };
-
-  /* ─── UI ───────────────────────────────────────────────────── */
+  /* ─── Render UI ───────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen flex items-center justify-center bg-skeuo-bg relative overflow-hidden p-4">
-      {/* Ambient glows */}
+      {/* Ambient background glows */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-skeuo-gold/04 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-skeuo-neonBlue/04 rounded-full blur-3xl" />
-        <div className="absolute inset-0 opacity-[0.025]"
-          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-skeuo-gold/05 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-skeuo-neonBlue/05 rounded-full blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 40, scale: 0.94 }}
+        initial={{ opacity: 0, y: 35, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-        className="relative w-full max-w-lg"
+        className="relative w-full max-w-md"
       >
-        {/* Gold rim glow */}
-        <div className="absolute -inset-2 rounded-[28px] bg-metallic-gold opacity-20 blur-sm" />
+        {/* Outer gold rim glow */}
+        <div className="absolute -inset-2 rounded-[28px] bg-metallic-gold opacity-20 blur-sm pointer-events-none" />
 
-        <div className="relative skeuo-panel border border-skeuo-gold/20 rounded-3xl overflow-hidden shadow-skeuo-vault">
-          <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-skeuo-gold/40 to-transparent" />
+        <div className="relative skeuo-panel border border-skeuo-gold/25 rounded-3xl overflow-hidden shadow-skeuo-vault">
+          <span className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-skeuo-gold/50 to-transparent" />
 
           {/* Header */}
           <div className="px-8 pt-8 pb-5 text-center border-b border-white/06">
@@ -357,36 +353,34 @@ export const SignUpPage: React.FC = () => {
             </h1>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-skeuo-gold/10 border border-skeuo-gold/30 text-skeuo-gold text-[10px] font-mono font-semibold uppercase tracking-widest mt-2">
               <span className="w-1.5 h-1.5 rounded-full bg-skeuo-gold animate-led-pulse-amber" />
-              {step === 'choose-role' ? 'Select Role' : step === 'verify' ? 'Email Verification' : 'Create Account'}
+              Create Account
             </div>
 
-            {/* Step indicator */}
+            {/* Step progress pills */}
             <div className="flex items-center justify-center gap-2 mt-4">
-              {[
-                { id: 'details', label: '1' },
-                { id: 'verify', label: '2' },
-                { id: 'choose-role', label: '3' },
-              ].map((s, i) => {
-                const stepOrder = ['details', 'verify', 'choose-role', 'done'];
-                const currentIndex = stepOrder.indexOf(step);
-                const isPassed = currentIndex > i;
-                const isCurrent = step === s.id;
-
+              {(['details', 'verify', 'done'] as Step[]).map((s, i) => {
+                const stepIdx = ['details', 'verify', 'done'].indexOf(step);
+                const isPassed = stepIdx > i;
+                const isCurrent = step === s;
                 return (
-                  <React.Fragment key={s.id}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all ${
-                      isCurrent
-                        ? 'bg-skeuo-gold border-skeuo-gold text-black shadow-[0_0_10px_rgba(212,175,55,0.5)]'
-                        : isPassed
+                  <React.Fragment key={s}>
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all ${
+                        isCurrent
+                          ? 'bg-skeuo-gold border-skeuo-gold text-black shadow-[0_0_10px_rgba(212,175,55,0.5)]'
+                          : isPassed
                           ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
                           : 'bg-white/04 border-white/10 text-gray-500'
-                    }`}>
-                      {isPassed ? '✓' : s.label}
+                      }`}
+                    >
+                      {isPassed ? '✓' : i + 1}
                     </div>
                     {i < 2 && (
-                      <div className={`h-px w-8 transition-all ${
-                        isPassed ? 'bg-emerald-500/50' : 'bg-white/10'
-                      }`} />
+                      <div
+                        className={`h-0.5 w-8 transition-all ${
+                          stepIdx > i ? 'bg-emerald-500/60' : 'bg-white/10'
+                        }`}
+                      />
                     )}
                   </React.Fragment>
                 );
@@ -394,20 +388,19 @@ export const SignUpPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Body */}
-          <div className="p-6 sm:p-7">
+          {/* Form Body */}
+          <div className="p-6">
             <AnimatePresence mode="wait">
-
-              {/* ── Step 1: Details ── */}
+              {/* ── STEP 1: Registration Details ── */}
               {step === 'details' && (
                 <motion.form
                   key="details"
-                  initial={{ opacity: 0, x: 30 }}
+                  initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
+                  exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                   onSubmit={handleDetailsSubmit}
-                  className="space-y-4"
+                  className="space-y-3.5"
                 >
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -420,7 +413,7 @@ export const SignUpPage: React.FC = () => {
                           onChange={e => setFirstName(e.target.value)}
                           placeholder="Juan"
                           required
-                          className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/08 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/60 transition-colors"
+                          className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/70 transition-colors"
                         />
                       </div>
                     </div>
@@ -434,9 +427,25 @@ export const SignUpPage: React.FC = () => {
                           onChange={e => setLastName(e.target.value)}
                           placeholder="Dela Cruz"
                           required
-                          className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/08 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/60 transition-colors"
+                          className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/70 transition-colors"
                         />
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Username (required by Clerk instance) */}
+                  <div className="space-y-1.5">
+                    <label className="skeuo-label text-[11px]">Username</label>
+                    <div className="relative">
+                      <User size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input
+                        type="text"
+                        value={username}
+                        onChange={e => setUsername(e.target.value)}
+                        placeholder="juan_delacruz"
+                        required
+                        className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/70 transition-colors"
+                      />
                     </div>
                   </div>
 
@@ -448,10 +457,15 @@ export const SignUpPage: React.FC = () => {
                       <input
                         type="email"
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={e => {
+                          setEmail(e.target.value);
+                          if (!username) {
+                            setUsername(e.target.value.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''));
+                          }
+                        }}
                         placeholder="juan@company.com"
                         required
-                        className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/08 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/60 transition-colors"
+                        className="w-full pl-8 pr-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/70 transition-colors"
                       />
                     </div>
                   </div>
@@ -468,17 +482,20 @@ export const SignUpPage: React.FC = () => {
                         placeholder="Min. 8 characters"
                         required
                         minLength={8}
-                        className="w-full pl-8 pr-10 py-2.5 bg-black/40 border border-white/08 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/60 transition-colors"
+                        className="w-full pl-8 pr-10 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm text-white placeholder-gray-600 focus:outline-none focus:border-skeuo-gold/70 transition-colors"
                       />
-                      <button type="button" onClick={() => setShowPw(!showPw)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => setShowPw(!showPw)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                      >
                         {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
                   </div>
 
                   {error && (
-                    <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                    <div className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
                       {error}
                     </div>
                   )}
@@ -489,18 +506,23 @@ export const SignUpPage: React.FC = () => {
                     className="w-full py-3 rounded-xl font-bold text-sm text-black transition-all mt-1
                       bg-gradient-to-r from-[#f5d77f] via-[#d4af37] to-[#997b1e]
                       shadow-[0_4px_16px_rgba(212,175,55,0.35)]
-                      hover:shadow-[0_6px_20px_rgba(212,175,55,0.5)] hover:brightness-110
+                      hover:shadow-[0_6px_22px_rgba(212,175,55,0.5)] hover:brightness-110
                       disabled:opacity-60 disabled:cursor-not-allowed
                       flex items-center justify-center gap-2"
                   >
                     {loading ? (
-                      <><span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Sending Code...</>
+                      <>
+                        <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        Sending Verification Code...
+                      </>
                     ) : (
-                      <><ArrowRight size={15} /> Continue & Send Code</>
+                      <>
+                        <ArrowRight size={15} /> Continue & Send Code
+                      </>
                     )}
                   </button>
 
-                  <p className="text-center text-xs text-gray-500 mt-2">
+                  <p className="text-center text-xs text-gray-400 mt-2">
                     Already have an account?{' '}
                     <Link to="/login" className="text-skeuo-gold hover:text-[#f5d77f] font-semibold transition-colors">
                       Sign In
@@ -509,19 +531,19 @@ export const SignUpPage: React.FC = () => {
                 </motion.form>
               )}
 
-              {/* ── Step 2: Email OTP Verification ── */}
+              {/* ── STEP 2: 6-Digit Email Verification Code ── */}
               {step === 'verify' && (
                 <motion.div
                   key="verify"
-                  initial={{ opacity: 0, x: 30 }}
+                  initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
+                  exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2 }}
                   className="text-center space-y-5"
                 >
                   <div className="flex justify-center">
                     <div className="w-14 h-14 rounded-2xl bg-skeuo-gold/10 border border-skeuo-gold/30 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.2)]">
-                      <KeyRound size={24} className="text-skeuo-gold" />
+                      <KeyRound size={26} className="text-skeuo-gold animate-bounce" style={{ animationDuration: '2s' }} />
                     </div>
                   </div>
 
@@ -530,234 +552,67 @@ export const SignUpPage: React.FC = () => {
                     <p className="text-gray-400 text-sm mt-1">
                       We sent a <span className="text-skeuo-gold font-semibold">6-digit code</span> to
                     </p>
-                    <p className="text-white font-semibold text-sm mt-0.5 break-all">
-                      {email || signUp?.emailAddress || 'your email'}
-                    </p>
+                    <p className="text-white font-semibold text-sm mt-0.5 break-all">{email}</p>
                   </div>
 
-                  <OtpInput value={otp} onChange={setOtp} disabled={verifying} />
+                  {/* 6 Digit Input Boxes */}
+                  <div className="py-2">
+                    <OtpInput value={otp} onChange={setOtp} disabled={verifying} />
+                  </div>
 
                   {otpError && (
-                    <div className="space-y-2">
-                      <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
-                        {otpError}
-                      </div>
-                      {/* If already verified, provide instant gateway button */}
-                      {(otpError.toLowerCase().includes('already verified') ||
-                        otpError.toLowerCase().includes('verified')) && (
-                        <button
-                          type="button"
-                          onClick={() => setStep('choose-role')}
-                          className="w-full py-2.5 px-3 rounded-xl bg-skeuo-gold/20 border border-skeuo-gold text-skeuo-gold text-xs font-bold hover:bg-skeuo-gold/30 transition-all flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(212,175,55,0.25)]"
-                        >
-                          Already Verified? Proceed to Select Role <ArrowRight size={14} />
-                        </button>
-                      )}
+                    <div className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+                      {otpError}
                     </div>
                   )}
 
-                  {/* Verify button */}
+                  {/* Verify & Enter Dashboard button */}
                   <button
                     onClick={handleVerify}
-                    disabled={verifying}
-                    className="w-full py-3 rounded-xl font-bold text-sm text-black transition-all
+                    disabled={otp.replace(/\D/g, '').length < 6 || verifying}
+                    className="w-full py-3.5 rounded-xl font-bold text-sm text-black transition-all
                       bg-gradient-to-r from-[#f5d77f] via-[#d4af37] to-[#997b1e]
                       shadow-[0_4px_16px_rgba(212,175,55,0.35)]
-                      hover:shadow-[0_6px_20px_rgba(212,175,55,0.5)] hover:brightness-110
-                      disabled:opacity-50 disabled:cursor-not-allowed
+                      hover:shadow-[0_6px_22px_rgba(212,175,55,0.5)] hover:brightness-110
+                      disabled:opacity-40 disabled:cursor-not-allowed
                       flex items-center justify-center gap-2"
                   >
                     {verifying ? (
-                      <><span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Verifying Code...</>
+                      <>
+                        <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        Verifying & Completing Setup...
+                      </>
                     ) : (
-                      <><Shield size={15} /> Verify & Access ISM</>
+                      <>
+                        <Shield size={16} /> Verify & Access ISM
+                      </>
                     )}
                   </button>
 
-                  {/* Resend & Back */}
-                  <div className="space-y-3 pt-1">
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={handleResend}
-                        disabled={!canResend}
-                        className={`flex items-center gap-1.5 text-xs font-semibold transition-all ${
-                          canResend
-                            ? 'text-skeuo-gold hover:text-[#f5d77f] cursor-pointer'
-                            : 'text-gray-600 cursor-not-allowed'
-                        }`}
-                      >
-                        <RotateCcw size={12} />
-                        Resend Code
-                      </button>
-                      {!canResend && (
-                        <span className="text-xs text-gray-500">
-                          in <span className="text-skeuo-gold font-mono font-bold">{countdown}s</span>
-                        </span>
-                      )}
-                    </div>
-
+                  {/* 60s Resend Timer */}
+                  <div className="flex items-center justify-center gap-2 pt-1">
                     <button
-                      type="button"
-                      onClick={() => {
-                        setStep('details');
-                        setOtp('');
-                        setOtpError('');
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-1 mx-auto"
+                      onClick={handleResend}
+                      disabled={!canResend}
+                      className={`flex items-center gap-1.5 text-xs font-semibold transition-all ${
+                        canResend
+                          ? 'text-skeuo-gold hover:text-[#f5d77f] cursor-pointer'
+                          : 'text-gray-600 cursor-not-allowed'
+                      }`}
                     >
-                      <ArrowLeft size={12} /> Palitan ang email o detalye
+                      <RotateCcw size={12} />
+                      Resend Code
                     </button>
+                    {!canResend && (
+                      <span className="text-xs text-gray-500">
+                        in <span className="text-skeuo-gold font-mono font-bold">{countdown}s</span>
+                      </span>
+                    )}
                   </div>
                 </motion.div>
               )}
 
-              {/* ── Step 3: Choose Role (Admin or Staff) ── */}
-              {step === 'choose-role' && (
-                <motion.div
-                  key="choose-role"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-5"
-                >
-                  <div className="text-center">
-                    <h2 className="text-white font-bold text-lg sm:text-xl">Piliin ang Iyong Role</h2>
-                    <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                      Pumili ng tungkulin para sa iyong account bago pumasok sa dashboard.
-                    </p>
-                  </div>
-
-                  {/* Role Option Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* Admin Card */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRole('ADMIN')}
-                      className={`relative p-4 rounded-2xl text-left border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                        selectedRole === 'ADMIN'
-                          ? 'bg-skeuo-gold/10 border-skeuo-gold shadow-[0_0_20px_rgba(212,175,55,0.3)]'
-                          : 'bg-black/40 border-white/10 hover:border-white/20 hover:bg-white/03'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2.5">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            selectedRole === 'ADMIN'
-                              ? 'bg-skeuo-gold/20 text-skeuo-gold'
-                              : 'bg-white/06 text-gray-400'
-                          }`}>
-                            <Shield size={20} />
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                            selectedRole === 'ADMIN'
-                              ? 'bg-skeuo-gold border-skeuo-gold text-black'
-                              : 'border-white/20'
-                          }`}>
-                            {selectedRole === 'ADMIN' && <Check size={12} strokeWidth={3} />}
-                          </div>
-                        </div>
-
-                        <div className="inline-block px-2 py-0.5 rounded-full bg-skeuo-gold/15 text-skeuo-gold text-[10px] font-bold font-mono uppercase tracking-wider mb-1">
-                          Full Control
-                        </div>
-                        <h3 className="text-white font-bold text-base">Administrator</h3>
-                        <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                          Ganap na access sa inventory, financial reports, audit logs, at pamamahala ng mga staff.
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-white/06 text-[11px] text-gray-400 space-y-1">
-                        <div className="flex items-center gap-1.5 text-gray-300">
-                          <span className="w-1 h-1 rounded-full bg-skeuo-gold" />
-                          <span>Pangasiwaan ang buong sistema</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-300">
-                          <span className="w-1 h-1 rounded-full bg-skeuo-gold" />
-                          <span>Lahat ng ulat at analytics</span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Staff Card */}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRole('STAFF')}
-                      className={`relative p-4 rounded-2xl text-left border transition-all duration-200 cursor-pointer flex flex-col justify-between ${
-                        selectedRole === 'STAFF'
-                          ? 'bg-cyan-500/10 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)]'
-                          : 'bg-black/40 border-white/10 hover:border-white/20 hover:bg-white/03'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2.5">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            selectedRole === 'STAFF'
-                              ? 'bg-cyan-500/20 text-cyan-400'
-                              : 'bg-white/06 text-gray-400'
-                          }`}>
-                            <Boxes size={20} />
-                          </div>
-                          <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                            selectedRole === 'STAFF'
-                              ? 'bg-cyan-400 border-cyan-400 text-black'
-                              : 'border-white/20'
-                          }`}>
-                            {selectedRole === 'STAFF' && <Check size={12} strokeWidth={3} />}
-                          </div>
-                        </div>
-
-                        <div className="inline-block px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 text-[10px] font-bold font-mono uppercase tracking-wider mb-1">
-                          Operations
-                        </div>
-                        <h3 className="text-white font-bold text-base">Staff Member</h3>
-                        <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                          Pamamahala ng stock-in / stock-out, pagtanggap ng delivery, at pagsusubaybay sa mga produkto.
-                        </p>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-white/06 text-[11px] text-gray-400 space-y-1">
-                        <div className="flex items-center gap-1.5 text-gray-300">
-                          <span className="w-1 h-1 rounded-full bg-cyan-400" />
-                          <span>Pang-araw-araw na operasyon</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-gray-300">
-                          <span className="w-1 h-1 rounded-full bg-cyan-400" />
-                          <span>Delivery & stock monitoring</span>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Permanent Lock Warning Alert */}
-                  <div className="p-3 rounded-xl bg-amber-500/08 border border-amber-500/25 flex items-start gap-2.5 text-left">
-                    <ShieldAlert size={16} className="text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                      <strong className="text-amber-300 font-semibold">Permanente ang mapipili mong Role:</strong> Ang mapipili mong role ({selectedRole}) ay permanenteng nakatali sa iyong account. Sa bawat susunod na pag-login mo sa ISM, <span className="underline font-semibold">{selectedRole} dashboard lamang</span> ang iyong mabubuksan.
-                    </p>
-                  </div>
-
-                  {/* Confirm & Proceed Button */}
-                  <button
-                    type="button"
-                    onClick={handleConfirmRole}
-                    disabled={savingRole}
-                    className={`w-full py-3.5 rounded-xl font-bold text-sm text-black transition-all shadow-lg flex items-center justify-center gap-2 ${
-                      selectedRole === 'ADMIN'
-                        ? 'bg-gradient-to-r from-[#f5d77f] via-[#d4af37] to-[#997b1e] shadow-[0_4px_18px_rgba(212,175,55,0.4)] hover:brightness-110'
-                        : 'bg-gradient-to-r from-cyan-300 via-cyan-400 to-teal-500 shadow-[0_4px_18px_rgba(6,182,212,0.4)] hover:brightness-110'
-                    }`}
-                  >
-                    {savingRole ? (
-                      <><span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> Kinukumpirma ang Role...</>
-                    ) : (
-                      <>Kumpirmahin bilang {selectedRole} & Pumasok sa ISM <ArrowRight size={16} /></>
-                    )}
-                  </button>
-                </motion.div>
-              )}
-
-              {/* ── Step 4: Done ── */}
+              {/* ── STEP 3: Verification Success & Redirect ── */}
               {step === 'done' && (
                 <motion.div
                   key="done"
@@ -772,25 +627,19 @@ export const SignUpPage: React.FC = () => {
                     transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.1 }}
                     className="flex justify-center"
                   >
-                    <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                      <CheckCircle2 size={32} className="text-emerald-400" />
+                    <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center shadow-[0_0_25px_rgba(16,185,129,0.3)]">
+                      <CheckCircle2 size={34} className="text-emerald-400" />
                     </div>
                   </motion.div>
                   <div>
-                    <h2 className="text-white font-bold text-xl">Account Configured!</h2>
-                    <div className="inline-block px-3 py-1 rounded-full bg-white/06 border border-white/10 text-xs font-mono font-semibold text-skeuo-gold mt-2">
-                      Role: {selectedRole}
-                    </div>
-                    <p className="text-gray-400 text-sm mt-2">
-                      Pumapasok na sa iyong {selectedRole} Dashboard...
-                    </p>
+                    <h2 className="text-white font-bold text-xl">Verification Successful!</h2>
+                    <p className="text-gray-400 text-sm mt-1">Accessing ISM Vault Dashboard...</p>
                   </div>
                   <div className="flex justify-center pt-2">
-                    <span className="w-5 h-5 border-2 border-skeuo-gold/30 border-t-skeuo-gold rounded-full animate-spin" />
+                    <span className="w-6 h-6 border-2 border-skeuo-gold/30 border-t-skeuo-gold rounded-full animate-spin" />
                   </div>
                 </motion.div>
               )}
-
             </AnimatePresence>
           </div>
 

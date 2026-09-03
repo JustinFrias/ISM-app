@@ -13,24 +13,14 @@ export const isClerkConfigured = Boolean(
 export function resolveUserRole(clerkUser: any): 'ADMIN' | 'STAFF' {
   if (!clerkUser) return 'STAFF';
 
-  // 1. Check custom metadata on Clerk User (set permanently during sign-up)
+  // 1. Check custom public metadata on Clerk User
   const metaRole = clerkUser.publicMetadata?.role || clerkUser.unsafeMetadata?.role;
   if (metaRole === 'ADMIN' || metaRole === 'admin') return 'ADMIN';
   if (metaRole === 'STAFF' || metaRole === 'staff') return 'STAFF';
 
-  // 2. Check persistent localStorage by email or user ID
-  const primaryEmail = (clerkUser.primaryEmailAddress?.emailAddress || '').toLowerCase();
-  if (primaryEmail) {
-    const savedRole = localStorage.getItem(`ism_user_role_${primaryEmail}`);
-    if (savedRole === 'ADMIN' || savedRole === 'STAFF') return savedRole as 'ADMIN' | 'STAFF';
-  }
-  if (clerkUser.id) {
-    const savedRole = localStorage.getItem(`ism_user_role_${clerkUser.id}`);
-    if (savedRole === 'ADMIN' || savedRole === 'STAFF') return savedRole as 'ADMIN' | 'STAFF';
-  }
-
-  // 3. Fallback: Check if email explicitly has admin
-  if (primaryEmail.includes('admin')) {
+  // 2. Check if user is the primary admin email
+  const primaryEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
+  if (primaryEmail.toLowerCase().includes('admin')) {
     return 'ADMIN';
   }
 

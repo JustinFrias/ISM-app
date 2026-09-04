@@ -48,7 +48,7 @@ export const SkeuoModal: React.FC<SkeuoModalProps> = ({
             onClick={onClose}
           />
           {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4">
             <motion.div
               key="modal"
               initial={{ opacity: 0, scale: 0.92, rotateY: -12, translateZ: -80 }}
@@ -57,7 +57,7 @@ export const SkeuoModal: React.FC<SkeuoModalProps> = ({
               transition={{ type: 'spring', stiffness: 400, damping: 30, mass: 0.8 }}
               style={{ perspective: 1200, transformStyle: 'preserve-3d' }}
               className={cn(
-                'relative w-full flex flex-col max-h-[90vh] rounded-2xl overflow-hidden',
+                'relative w-full flex flex-col max-h-[92vh] max-w-[95vw] rounded-2xl overflow-hidden',
                 sizeStyles[size],
                 variant === 'vault' && 'skeuo-panel border border-white/08',
                 variant === 'paper' && 'skeuo-paper rounded-xl',
@@ -70,15 +70,15 @@ export const SkeuoModal: React.FC<SkeuoModalProps> = ({
 
               {/* Header */}
               <div className={cn(
-                'flex items-start justify-between px-6 py-4 border-b flex-shrink-0',
+                'flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0',
                 variant === 'paper' ? 'border-gray-300/50' : 'border-white/08'
               )}>
                 <div>
                   <h2 className={cn(
-                    'font-display font-bold text-lg',
+                    'font-display font-bold text-base sm:text-lg',
                     variant === 'paper' ? 'text-gray-800' : 'text-skeuo-chrome'
                   )}>{title}</h2>
-                  {subtitle && <p className={cn('text-sm mt-0.5', variant === 'paper' ? 'text-gray-500' : 'text-gray-500')}>{subtitle}</p>}
+                  {subtitle && <p className={cn('text-xs sm:text-sm mt-0.5', variant === 'paper' ? 'text-gray-500' : 'text-gray-500')}>{subtitle}</p>}
                 </div>
                 <button onClick={onClose}
                   className="p-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/08 transition-colors ml-4 flex-shrink-0">
@@ -87,12 +87,12 @@ export const SkeuoModal: React.FC<SkeuoModalProps> = ({
               </div>
 
               {/* Body */}
-              <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">{children}</div>
 
               {/* Footer */}
               {footer && (
                 <div className={cn(
-                  'flex items-center justify-end gap-3 px-6 py-4 border-t flex-shrink-0',
+                  'flex items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t flex-shrink-0 flex-wrap',
                   variant === 'paper' ? 'border-gray-300/50 bg-gray-50' : 'border-white/08 bg-black/20'
                 )}>
                   {footer}

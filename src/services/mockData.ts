@@ -27,6 +27,16 @@ export const mockUsers: User[] = [
     createdAt: '2025-01-15T00:00:00Z',
   },
   {
+    id: 'usr-admin-003',
+    username: 'maryrosealvero',
+    fullName: 'Mary Rose Alvero',
+    email: 'alveromaryrose025@gmail.com',
+    role: 'ADMIN',
+    isActive: true,
+    lastLogin: '2026-09-04T08:00:00Z',
+    createdAt: '2026-09-04T00:00:00Z',
+  },
+  {
     id: 'usr-staff-001',
     username: 'staff01',
     fullName: 'Marco dela Cruz',

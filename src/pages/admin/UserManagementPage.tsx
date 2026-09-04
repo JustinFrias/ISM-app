@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Shield, Users, Mail, Send, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, Shield, Users, Mail, CheckCircle2, UserCheck } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
 import { SkeuoButton } from '../../components/skeuomorphic/SkeuoButton';
 import { SkeuoBadge } from '../../components/skeuomorphic/SkeuoBadge';
@@ -37,27 +37,49 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
   const [users, setUsers] = useState<User[]>(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Ensure all accounts are automatically marked active & accepted
+          return parsed.map((u: User) => ({
+            ...u,
+            isActive: u.isActive !== undefined ? u.isActive : true,
+            invitationStatus: 'ACCEPTED' as const,
+          }));
+        }
+      }
     } catch (e) {
       // fallback
     }
-    return mockUsers.filter(u => u.role === targetRole);
+    return mockUsers
+      .filter(u => u.role === targetRole)
+      .map(u => ({ ...u, invitationStatus: 'ACCEPTED' as const, isActive: true }));
   });
 
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(users));
+
+      // Synchronize to global email-to-role map
+      const existingMapRaw = localStorage.getItem('skeuo_user_assigned_roles');
+      const roleMap: Record<string, 'ADMIN' | 'STAFF'> = existingMapRaw ? JSON.parse(existingMapRaw) : {};
+      users.forEach(u => {
+        if (u.email) {
+          roleMap[u.email.toLowerCase().trim()] = targetRole;
+        }
+      });
+      localStorage.setItem('skeuo_user_assigned_roles', JSON.stringify(roleMap));
     } catch (e) {
       // ignore
     }
-  }, [users, storageKey]);
+  }, [users, storageKey, targetRole]);
 
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<User>>({});
   const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
-  const [isSending, setIsSending] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const openAdd = () => {
     setEditUser(null);
@@ -71,36 +93,42 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
     setShowModal(true);
   };
 
-  const handleSendInvite = async () => {
+  const handleSaveRole = async () => {
     if (!form.email || !form.email.includes('@')) {
       alert('Pakilagay ang wastong email address.');
       return;
     }
 
-    const cleanEmail = form.email.trim();
+    const cleanEmail = form.email.trim().toLowerCase();
     const { fullName: defaultName, username: defaultUser } = deriveNameFromEmail(cleanEmail);
     const finalFullName = form.fullName?.trim() || defaultName;
     const finalUsername = form.username?.trim() || defaultUser;
 
-    setIsSending(true);
+    setIsSaving(true);
 
     if (editUser) {
-      setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...form, fullName: finalFullName, username: finalUsername } as User : u));
+      setUsers(prev => prev.map(u => u.id === editUser.id ? { 
+        ...u, 
+        ...form, 
+        fullName: finalFullName, 
+        username: finalUsername, 
+        role: targetRole,
+        invitationStatus: 'ACCEPTED',
+      } as User : u));
+
       logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_UPDATE', 'User', editUser.id, `Updated ${targetRole} account: ${finalUsername}`);
       setNotification({
         title: 'Account Updated',
-        message: `Matagumpay na na-update ang impormasyon para kay ${finalFullName}.`,
+        message: `Matagumpay na na-update ang impormasyon para kay ${finalFullName} bilang ${targetRole}.`,
       });
-      setIsSending(false);
+      setIsSaving(false);
       setShowModal(false);
       return;
     }
 
-    let isAlreadyRegistered = false;
-    let apiMessage = '';
-
+    // Call serverless /api/invite asynchronously in background to sync Clerk metadata
     try {
-      const res = await fetch('/api/invite', {
+      fetch('/api/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -108,17 +136,12 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
           role: targetRole,
           redirectUrl: window.location.origin,
         }),
-      });
-
-      const data = await res.json();
-      if (data.alreadyRegistered) {
-        isAlreadyRegistered = true;
-      }
-      apiMessage = data.message || (data.error ? `Notice: ${data.error}` : '');
-    } catch (err: any) {
-      console.warn('API invite request error:', err);
+      }).catch(err => console.warn('Background Clerk sync notice:', err));
+    } catch (err) {
+      console.warn('API sync warning:', err);
     }
 
+    // Immediately assign role and mark account active
     const newUser: User = {
       id: uuidv4(),
       username: finalUsername,
@@ -126,73 +149,48 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
       email: cleanEmail,
       role: targetRole,
       isActive: true,
-      invitationStatus: isAlreadyRegistered ? 'ACCEPTED' : 'PENDING',
+      invitationStatus: 'ACCEPTED',
       createdAt: new Date().toISOString(),
     };
 
-    setUsers(prev => [newUser, ...prev]);
-    logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_CREATE', 'User', newUser.id, `Invited ${targetRole} account: ${cleanEmail}`);
+    setUsers(prev => {
+      const filtered = prev.filter(u => u.email.toLowerCase().trim() !== cleanEmail);
+      return [newUser, ...filtered];
+    });
 
-    if (isAlreadyRegistered) {
-      setNotification({
-        title: 'User Already Registered in Clerk!',
-        message: `Ang ${cleanEmail} ay dati nang may account sa Clerk! Awtomatiko nang na-set ang kanyang role bilang ${targetRole}. Hindi na niya kailangan ng invitation link—pwede na siyang mag-login diretso sa app!`,
-      });
-    } else {
-      setNotification({
-        title: 'Invitation Sent to Email!',
-        message: apiMessage || `Isang notification at confirmation link ang ipinadala sa ${cleanEmail}. Ang tatanggap mismo ang magki-click ng "Accept Invitation" sa kanyang email para ma-activate ang kanyang ${targetRole} account at mag-set ng password.`,
-      });
-    }
-
-    setIsSending(false);
-    setShowModal(false);
-  };
-
-  const handleResendInvite = async (u: User) => {
-    setIsSending(true);
-    let apiMessage = '';
-    let isAlreadyRegistered = false;
-
+    // Update global role lookup immediately
     try {
-      const res = await fetch('/api/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: u.email.trim(),
-          role: u.role,
-          redirectUrl: window.location.origin,
-        }),
-      });
-      const data = await res.json();
-      if (data.alreadyRegistered) {
-        isAlreadyRegistered = true;
-      }
-      apiMessage = data.message || data.error;
-    } catch (err) {
-      console.warn('Resend error:', err);
-    }
+      const existingMapRaw = localStorage.getItem('skeuo_user_assigned_roles');
+      const roleMap: Record<string, 'ADMIN' | 'STAFF'> = existingMapRaw ? JSON.parse(existingMapRaw) : {};
+      roleMap[cleanEmail] = targetRole;
+      localStorage.setItem('skeuo_user_assigned_roles', JSON.stringify(roleMap));
+    } catch (e) {}
 
-    if (isAlreadyRegistered) {
-      setUsers(prev => prev.map(usr => usr.id === u.id ? { ...usr, invitationStatus: 'ACCEPTED' } : usr));
-      setNotification({
-        title: 'User Already Active in Clerk!',
-        message: `Ang account para sa ${u.email} ay aktibo na sa Clerk! Na-update na ang kanyang role bilang ${u.role}. Pwede na siyang mag-login diretso nang hindi na kailangan mag-accept ng email invite.`,
-      });
-    } else {
-      setNotification({
-        title: 'Invitation Re-sent!',
-        message: apiMessage || `Muling ipinadala ang confirmation link sa email ni ${u.email}. Pakisabi sa kanya na tingnan ang kanyang Inbox o Spam folder at i-click ang Accept.`,
-      });
-    }
+    logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_CREATE', 'User', newUser.id, `Assigned ${targetRole} role to: ${cleanEmail}`);
 
-    setIsSending(false);
+    setNotification({
+      title: 'Awtomatikong Na-assign ang Role!',
+      message: `Awtomatiko nang na-assign ang role na ${targetRole} kay ${finalFullName} (${cleanEmail}). Aktibo na agad ang kanyang account sa system at hindi na kailangan ng email confirmation link!`,
+    });
+
+    setIsSaving(false);
+    setShowModal(false);
   };
 
   const handleDelete = (id: string) => {
     const u = users.find(u => u.id === id);
     setUsers(prev => prev.filter(u => u.id !== id));
-    if (u) logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_DELETE', 'User', id, `Deleted ${targetRole} account: ${u.username}`);
+    if (u) {
+      logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_DELETE', 'User', id, `Deleted ${targetRole} account: ${u.username}`);
+      try {
+        const existingMapRaw = localStorage.getItem('skeuo_user_assigned_roles');
+        if (existingMapRaw) {
+          const roleMap = JSON.parse(existingMapRaw);
+          delete roleMap[u.email.toLowerCase().trim()];
+          localStorage.setItem('skeuo_user_assigned_roles', JSON.stringify(roleMap));
+        }
+      } catch (e) {}
+    }
     setDeleteId(null);
   };
 
@@ -202,10 +200,10 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
     <div className="flex flex-col min-h-screen">
       <Header
         title={`${targetRole === 'ADMIN' ? 'Admin' : 'Staff'} Accounts`}
-        subtitle={`Manage ${targetRole.toLowerCase()} email invitations and credentials`}
+        subtitle={`Manage active ${targetRole.toLowerCase()} accounts and permissions`}
         actions={
           <SkeuoButton variant="gold" size="sm" onClick={openAdd}>
-            <Mail size={14} /> Invite {targetRole === 'ADMIN' ? 'Admin' : 'Staff'} via Email
+            <Shield size={14} /> Assign {targetRole === 'ADMIN' ? 'Admin' : 'Staff'} Role
           </SkeuoButton>
         }
       />
@@ -240,8 +238,6 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
         {/* User Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {users.map((u, i) => {
-            const isPending = u.invitationStatus === 'PENDING';
-
             return (
               <motion.div
                 key={u.id}
@@ -261,14 +257,10 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
                       {u.fullName ? u.fullName.charAt(0).toUpperCase() : u.email.charAt(0).toUpperCase()}
                     </div>
 
-                    {isPending ? (
-                      <SkeuoLED status="amber" size="md" label="Pending Accept" pulse />
-                    ) : (
-                      <SkeuoLED status={u.isActive ? 'green' : 'off'} size="md" label={u.isActive ? 'Active' : 'Inactive'} />
-                    )}
+                    <SkeuoLED status={u.isActive ? 'green' : 'off'} size="md" label={u.isActive ? 'Active' : 'Inactive'} />
                   </div>
 
-                  <h3 className="font-display font-bold text-skeuo-chrome truncate">{u.fullName || 'New Invited User'}</h3>
+                  <h3 className="font-display font-bold text-skeuo-chrome truncate">{u.fullName || 'User'}</h3>
                   <p className="text-xs text-gray-500 font-mono mt-0.5 truncate">@{u.username}</p>
                   <p className="text-xs text-amber-300/80 mt-1 flex items-center gap-1.5 truncate font-medium">
                     <Mail size={12} className="shrink-0 text-amber-400" />
@@ -277,38 +269,15 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
 
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <SkeuoBadge label={u.role} variant={u.role === 'ADMIN' ? 'gold' : 'metal'} />
-                    {isPending ? (
-                      <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono font-medium">
-                        Invite Sent
-                      </span>
-                    ) : (
-                      <p className="text-[10px] text-gray-700 font-mono">
-                        {u.lastLogin ? `Last: ${formatDate(u.lastLogin)}` : 'Never logged in'}
-                      </p>
-                    )}
+                    <span className="text-[10px] text-emerald-400 font-mono font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                      Active Account
+                    </span>
                   </div>
                 </div>
 
                 {/* Actions Bottom */}
                 <div className="mt-5 pt-3 border-t border-white/06 flex flex-col gap-2">
-                  {isPending && (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-[10px] text-amber-300 leading-tight">
-                        <Mail size={12} className="text-amber-400 shrink-0" />
-                        <span>Dapat buksan ng user ang kanyang email para i-accept ang {u.role} role.</span>
-                      </div>
-                      <SkeuoButton
-                        variant="gold"
-                        size="xs"
-                        onClick={() => handleResendInvite(u)}
-                        className="w-full text-[10px] justify-center"
-                        title="Muling magpadala ng invitation email sa user"
-                      >
-                        <RefreshCw size={10} /> Resend Email to User
-                      </SkeuoButton>
-                    </div>
-                  )}
-
                   <div className="flex items-center gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                     <SkeuoButton
                       variant={u.isActive ? 'danger' : 'success'}
@@ -332,19 +301,19 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
         </div>
       </div>
 
-      {/* Invite / Add Modal */}
+      {/* Assign Role / Edit Modal */}
       <SkeuoModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title={editUser ? `Edit ${targetRole} Account` : `Invite ${targetRole} Account`}
+        title={editUser ? `Edit ${targetRole} Account` : `Assign ${targetRole} Role`}
         size="sm"
         footer={
           <>
             <SkeuoButton variant="ghost" size="sm" onClick={() => setShowModal(false)}>
               Cancel
             </SkeuoButton>
-            <SkeuoButton variant="gold" size="sm" onClick={handleSendInvite} disabled={isSending}>
-              <Send size={13} /> {isSending ? 'Sending...' : editUser ? 'Save Changes' : 'Send Invite'}
+            <SkeuoButton variant="gold" size="sm" onClick={handleSaveRole} disabled={isSaving}>
+              <UserCheck size={13} /> {isSaving ? 'Saving...' : editUser ? 'Save Changes' : `Assign ${targetRole} Role`}
             </SkeuoButton>
           </>
         }
@@ -376,13 +345,13 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
             onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
           />
 
-          {/* Information Banner explaining Email Confirmation Flow */}
-          <div className="p-3.5 bg-gradient-to-r from-amber-500/10 to-amber-600/05 border border-amber-500/25 rounded-xl text-xs flex items-start gap-3 shadow-inner">
-            <Mail className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          {/* Automatic Role Assignment Info Banner */}
+          <div className="p-3.5 bg-gradient-to-r from-emerald-500/10 to-emerald-600/05 border border-emerald-500/25 rounded-xl text-xs flex items-start gap-3 shadow-inner">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-amber-200">Email Invitation & Confirmation</p>
+              <p className="font-semibold text-emerald-200">Awtomatikong Role Assignment</p>
               <p className="text-gray-400 mt-1 leading-relaxed">
-                Hindi na kailangan ng manual password. Makakatanggap ang user ng notification sa email na ito para i-confirm o i-accept ang imbitasyon at mag-set up ng sarili niyang password.
+                Awtomatiko nang itatalaga at magiging aktibo agad ang role na <strong className="text-emerald-300">{targetRole}</strong> sa account na ito. Pagka-login ng user gamit ang email na ito, diretso siyang makakapasok bilang <strong className="text-white">{targetRole}</strong> nang hindi na kailangan mag-confirm sa email.
               </p>
             </div>
           </div>

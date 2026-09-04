@@ -20,10 +20,45 @@ export function resolveUserRole(clerkUser: any): 'ADMIN' | 'STAFF' {
   if (metaRole === 'ADMIN' || metaRole === 'admin') return 'ADMIN';
   if (metaRole === 'STAFF' || metaRole === 'staff') return 'STAFF';
 
-  // 2. Check if user is the primary admin email
-  const primaryEmail = clerkUser.primaryEmailAddress?.emailAddress || '';
-  if (primaryEmail.toLowerCase().includes('admin')) {
+  const primaryEmail = (clerkUser.primaryEmailAddress?.emailAddress || '').toLowerCase().trim();
+
+  // 2. Direct assignment for known admin accounts
+  if (
+    primaryEmail === 'alveromaryrose025@gmail.com' ||
+    primaryEmail.includes('admin') ||
+    primaryEmail === 'admin@skeuo.vault' ||
+    primaryEmail === 'elena@skeuo.vault'
+  ) {
     return 'ADMIN';
+  }
+
+  // 3. Check role assignment mapping in localStorage
+  try {
+    const roleMappingRaw = localStorage.getItem('skeuo_user_assigned_roles');
+    if (roleMappingRaw) {
+      const mapping = JSON.parse(roleMappingRaw);
+      if (mapping && mapping[primaryEmail]) {
+        return mapping[primaryEmail];
+      }
+    }
+
+    const adminUsersRaw = localStorage.getItem('skeuo_users_management_ADMIN');
+    if (adminUsersRaw) {
+      const adminUsers = JSON.parse(adminUsersRaw);
+      if (Array.isArray(adminUsers) && adminUsers.some((u: any) => u.email?.toLowerCase().trim() === primaryEmail)) {
+        return 'ADMIN';
+      }
+    }
+
+    const staffUsersRaw = localStorage.getItem('skeuo_users_management_STAFF');
+    if (staffUsersRaw) {
+      const staffUsers = JSON.parse(staffUsersRaw);
+      if (Array.isArray(staffUsers) && staffUsers.some((u: any) => u.email?.toLowerCase().trim() === primaryEmail)) {
+        return 'STAFF';
+      }
+    }
+  } catch (e) {
+    // ignore
   }
 
   return 'STAFF';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Shield, Users, Mail, Send, CheckCircle2, RefreshCw, UserCheck } from 'lucide-react';
+import { Plus, Edit2, Trash2, Shield, Users, Mail, Send, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
 import { SkeuoButton } from '../../components/skeuomorphic/SkeuoButton';
 import { SkeuoBadge } from '../../components/skeuomorphic/SkeuoBadge';
@@ -101,9 +101,24 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
       setUsers(prev => [newUser, ...prev]);
       logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_CREATE', 'User', newUser.id, `Sent invitation for ${targetRole} account: ${form.email}`);
 
+      // Dispatch invitation email via Clerk API
+      try {
+        fetch('/api/invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email.trim(),
+            role: targetRole,
+            redirectUrl: window.location.origin,
+          }),
+        }).catch(err => console.warn('Clerk invite request:', err));
+      } catch (err) {
+        console.warn('Invite trigger failed:', err);
+      }
+
       setNotification({
-        title: 'Invitation Sent!',
-        message: `Isang notification at confirmation link ang ipinadala sa ${form.email}. Makakatanggap sila ng email para i-accept at kumpirmahin ang kanilang ${targetRole} access.`,
+        title: 'Invitation Sent to Email!',
+        message: `Isang notification at confirmation link ang ipinadala sa ${form.email}. Ang tatanggap mismo ang magki-click ng "Accept Invitation" sa kanyang email para ma-activate ang kanyang ${targetRole} account at mag-set ng password.`,
       });
     }
 
@@ -111,17 +126,23 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
   };
 
   const handleResendInvite = (u: User) => {
+    try {
+      fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: u.email.trim(),
+          role: u.role,
+          redirectUrl: window.location.origin,
+        }),
+      }).catch(err => console.warn('Resend invite request:', err));
+    } catch (err) {
+      console.warn('Resend failed:', err);
+    }
+
     setNotification({
       title: 'Invitation Re-sent!',
-      message: `Muling nagpadala ng notification at confirmation link sa ${u.email}.`,
-    });
-  };
-
-  const handleSimulateAccept = (id: string) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, invitationStatus: 'ACCEPTED', isActive: true, lastLogin: new Date().toISOString() } : u));
-    setNotification({
-      title: 'Invitation Accepted!',
-      message: 'Kinumpirma na ng user ang kanyang email at aktibo na ang kanyang account.',
+      message: `Muling ipinadala ang confirmation link sa email ni ${u.email}. Pakisabi sa kanya na tingnan ang kanyang Inbox o Spam folder at i-click ang Accept.`,
     });
   };
 
@@ -228,24 +249,19 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
                 {/* Actions Bottom */}
                 <div className="mt-5 pt-3 border-t border-white/06 flex flex-col gap-2">
                   {isPending && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 border border-amber-500/25 rounded-lg text-[10px] text-amber-300 leading-tight">
+                        <Mail size={12} className="text-amber-400 shrink-0" />
+                        <span>Dapat buksan ng user ang kanyang email para i-accept ang {u.role} role.</span>
+                      </div>
                       <SkeuoButton
                         variant="gold"
                         size="xs"
                         onClick={() => handleResendInvite(u)}
-                        className="flex-1 text-[10px]"
-                        title="Resend invitation email"
+                        className="w-full text-[10px] justify-center"
+                        title="Muling magpadala ng invitation email sa user"
                       >
-                        <RefreshCw size={10} /> Resend Email
-                      </SkeuoButton>
-                      <SkeuoButton
-                        variant="success"
-                        size="xs"
-                        onClick={() => handleSimulateAccept(u.id)}
-                        className="text-[10px]"
-                        title="Accept invite (Confirm)"
-                      >
-                        <UserCheck size={10} /> Accept
+                        <RefreshCw size={10} /> Resend Email to User
                       </SkeuoButton>
                     </div>
                   )}

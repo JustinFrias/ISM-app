@@ -1,4 +1,6 @@
-export const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '';
+export const clerkPublishableKey =
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  'pk_test_Z3JhdGVmdWwtdmVydmV0LTY5NjEuY2xlcmsuYWNjb3VudHMuZGV2JA';
 
 export const isClerkConfigured = Boolean(
   clerkPublishableKey &&

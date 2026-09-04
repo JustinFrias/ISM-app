@@ -57,6 +57,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<User>>({});
   const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   const openAdd = () => {
     setEditUser(null);
@@ -70,15 +71,18 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
     setShowModal(true);
   };
 
-  const handleSendInvite = () => {
+  const handleSendInvite = async () => {
     if (!form.email || !form.email.includes('@')) {
       alert('Pakilagay ang wastong email address.');
       return;
     }
 
-    const { fullName: defaultName, username: defaultUser } = deriveNameFromEmail(form.email);
+    const cleanEmail = form.email.trim();
+    const { fullName: defaultName, username: defaultUser } = deriveNameFromEmail(cleanEmail);
     const finalFullName = form.fullName?.trim() || defaultName;
     const finalUsername = form.username?.trim() || defaultUser;
+
+    setIsSending(true);
 
     if (editUser) {
       setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...form, fullName: finalFullName, username: finalUsername } as User : u));
@@ -87,47 +91,71 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
         title: 'Account Updated',
         message: `Matagumpay na na-update ang impormasyon para kay ${finalFullName}.`,
       });
-    } else {
-      const newUser: User = {
-        id: uuidv4(),
-        username: finalUsername,
-        fullName: finalFullName,
-        email: form.email.trim(),
-        role: targetRole,
-        isActive: true,
-        invitationStatus: 'PENDING',
-        createdAt: new Date().toISOString(),
-      };
-      setUsers(prev => [newUser, ...prev]);
-      logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_CREATE', 'User', newUser.id, `Sent invitation for ${targetRole} account: ${form.email}`);
+      setIsSending(false);
+      setShowModal(false);
+      return;
+    }
 
-      // Dispatch invitation email via Clerk API
-      try {
-        fetch('/api/invite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: form.email.trim(),
-            role: targetRole,
-            redirectUrl: window.location.origin,
-          }),
-        }).catch(err => console.warn('Clerk invite request:', err));
-      } catch (err) {
-        console.warn('Invite trigger failed:', err);
+    let isAlreadyRegistered = false;
+    let apiMessage = '';
+
+    try {
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          role: targetRole,
+          redirectUrl: window.location.origin,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.alreadyRegistered) {
+        isAlreadyRegistered = true;
       }
+      apiMessage = data.message || (data.error ? `Notice: ${data.error}` : '');
+    } catch (err: any) {
+      console.warn('API invite request error:', err);
+    }
 
+    const newUser: User = {
+      id: uuidv4(),
+      username: finalUsername,
+      fullName: finalFullName,
+      email: cleanEmail,
+      role: targetRole,
+      isActive: true,
+      invitationStatus: isAlreadyRegistered ? 'ACCEPTED' : 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+
+    setUsers(prev => [newUser, ...prev]);
+    logAudit(currentUser!.id, currentUser!.fullName, currentUser!.role, 'ACCOUNT_CREATE', 'User', newUser.id, `Invited ${targetRole} account: ${cleanEmail}`);
+
+    if (isAlreadyRegistered) {
+      setNotification({
+        title: 'User Already Registered in Clerk!',
+        message: `Ang ${cleanEmail} ay dati nang may account sa Clerk! Awtomatiko nang na-set ang kanyang role bilang ${targetRole}. Hindi na niya kailangan ng invitation link—pwede na siyang mag-login diretso sa app!`,
+      });
+    } else {
       setNotification({
         title: 'Invitation Sent to Email!',
-        message: `Isang notification at confirmation link ang ipinadala sa ${form.email}. Ang tatanggap mismo ang magki-click ng "Accept Invitation" sa kanyang email para ma-activate ang kanyang ${targetRole} account at mag-set ng password.`,
+        message: apiMessage || `Isang notification at confirmation link ang ipinadala sa ${cleanEmail}. Ang tatanggap mismo ang magki-click ng "Accept Invitation" sa kanyang email para ma-activate ang kanyang ${targetRole} account at mag-set ng password.`,
       });
     }
 
+    setIsSending(false);
     setShowModal(false);
   };
 
-  const handleResendInvite = (u: User) => {
+  const handleResendInvite = async (u: User) => {
+    setIsSending(true);
+    let apiMessage = '';
+    let isAlreadyRegistered = false;
+
     try {
-      fetch('/api/invite', {
+      const res = await fetch('/api/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -135,15 +163,30 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
           role: u.role,
           redirectUrl: window.location.origin,
         }),
-      }).catch(err => console.warn('Resend invite request:', err));
+      });
+      const data = await res.json();
+      if (data.alreadyRegistered) {
+        isAlreadyRegistered = true;
+      }
+      apiMessage = data.message || data.error;
     } catch (err) {
-      console.warn('Resend failed:', err);
+      console.warn('Resend error:', err);
     }
 
-    setNotification({
-      title: 'Invitation Re-sent!',
-      message: `Muling ipinadala ang confirmation link sa email ni ${u.email}. Pakisabi sa kanya na tingnan ang kanyang Inbox o Spam folder at i-click ang Accept.`,
-    });
+    if (isAlreadyRegistered) {
+      setUsers(prev => prev.map(usr => usr.id === u.id ? { ...usr, invitationStatus: 'ACCEPTED' } : usr));
+      setNotification({
+        title: 'User Already Active in Clerk!',
+        message: `Ang account para sa ${u.email} ay aktibo na sa Clerk! Na-update na ang kanyang role bilang ${u.role}. Pwede na siyang mag-login diretso nang hindi na kailangan mag-accept ng email invite.`,
+      });
+    } else {
+      setNotification({
+        title: 'Invitation Re-sent!',
+        message: apiMessage || `Muling ipinadala ang confirmation link sa email ni ${u.email}. Pakisabi sa kanya na tingnan ang kanyang Inbox o Spam folder at i-click ang Accept.`,
+      });
+    }
+
+    setIsSending(false);
   };
 
   const handleDelete = (id: string) => {
@@ -300,8 +343,8 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
             <SkeuoButton variant="ghost" size="sm" onClick={() => setShowModal(false)}>
               Cancel
             </SkeuoButton>
-            <SkeuoButton variant="gold" size="sm" onClick={handleSendInvite}>
-              <Send size={13} /> {editUser ? 'Save Changes' : 'Send Invite'}
+            <SkeuoButton variant="gold" size="sm" onClick={handleSendInvite} disabled={isSending}>
+              <Send size={13} /> {isSending ? 'Sending...' : editUser ? 'Save Changes' : 'Send Invite'}
             </SkeuoButton>
           </>
         }

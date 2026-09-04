@@ -23,28 +23,32 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Valid email address is required' });
   }
 
+  const cleanEmail = email.trim().toLowerCase();
+  const targetRole = role || 'STAFF';
   const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 
   if (!clerkSecretKey) {
-    // If not yet available in dev environment, return simulated success
     return res.status(200).json({
       success: true,
       simulated: true,
-      message: `Invitation email queued for ${email}. Configure CLERK_SECRET_KEY in Vercel to dispatch live Clerk emails.`,
+      message: `Invitation email queued for ${cleanEmail}. (CLERK_SECRET_KEY not set)`,
     });
   }
 
+  const authHeader = {
+    'Authorization': `Bearer ${clerkSecretKey}`,
+    'Content-Type': 'application/json',
+  };
+
   try {
+    // 1. Try to create an invitation
     const clerkRes = await fetch('https://api.clerk.com/v1/invitations', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${clerkSecretKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: authHeader,
       body: JSON.stringify({
-        email_address: email.trim(),
+        email_address: cleanEmail,
         public_metadata: {
-          role: role || 'STAFF',
+          role: targetRole,
         },
         redirect_url: redirectUrl || 'https://akinto.vercel.app',
       }),
@@ -52,18 +56,50 @@ export default async function handler(req, res) {
 
     const data = await clerkRes.json();
 
-    if (!clerkRes.ok) {
-      const errorMsg = data.errors?.[0]?.message || 'Clerk failed to send invitation';
-      return res.status(clerkRes.status).json({
-        success: false,
-        error: errorMsg,
+    if (clerkRes.ok) {
+      return res.status(200).json({
+        success: true,
+        invitation: data,
+        message: `Invitation email sent successfully to ${cleanEmail}. Check Inbox or Spam.`,
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      invitation: data,
-      message: `Invitation email sent successfully to ${email} with role ${role || 'STAFF'}.`,
+    const firstError = data.errors?.[0]?.message || '';
+
+    // 2. Case: The email address is already a registered user in Clerk
+    if (firstError.toLowerCase().includes('taken') || firstError.toLowerCase().includes('already')) {
+      // Find the user and update their role to the target role
+      const userSearchRes = await fetch(
+        `https://api.clerk.com/v1/users?email_address=${encodeURIComponent(cleanEmail)}`,
+        { headers: authHeader }
+      );
+      const userList = await userSearchRes.json();
+
+      if (Array.isArray(userList) && userList.length > 0) {
+        const userId = userList[0].id;
+        // Update public metadata role
+        await fetch(`https://api.clerk.com/v1/users/${userId}/metadata`, {
+          method: 'PATCH',
+          headers: authHeader,
+          body: JSON.stringify({
+            public_metadata: {
+              role: targetRole,
+            },
+          }),
+        });
+
+        return res.status(200).json({
+          success: true,
+          alreadyRegistered: true,
+          message: `Ang ${cleanEmail} ay nakarehistro na sa Clerk! Na-set na ang role niya bilang ${targetRole}. Pwede na siyang mag-login diretso sa app.`,
+        });
+      }
+    }
+
+    // If other error occurred
+    return res.status(clerkRes.status || 400).json({
+      success: false,
+      error: firstError || 'Failed to send invitation',
     });
   } catch (err) {
     return res.status(500).json({

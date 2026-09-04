@@ -85,24 +85,6 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
     setDismissedIds(prev => Array.from(new Set([...prev, productId])));
   };
 
-  const handleQuickRestock = (e: React.MouseEvent, productId: string) => {
-    e.stopPropagation();
-    const p = products.find(prod => prod.id === productId);
-    const restockQty = p?.reorderQuantity || 10;
-    adjustStock(
-      productId,
-      'STOCK_IN',
-      restockQty,
-      currentUser?.id || 'admin',
-      currentUser?.fullName || 'Admin',
-      `RESTOCK-${Date.now().toString().slice(-4)}`,
-      `Quick restocked from notification banner (+${restockQty})`
-    );
-    // Also mark as dismissed so badge clears immediately
-    setDismissedIds(prev => Array.from(new Set([...prev, productId])));
-    setSuccessToast(`Matagumpay na nadagdagan ng +${restockQty} ${p?.unit || 'units'} ang ${p?.name || 'item'}!`);
-    setTimeout(() => setSuccessToast(null), 4000);
-  };
 
   const handleItemClick = (p: Product) => {
     // Automatically mark as read/dismissed from unread list
@@ -310,28 +292,18 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
                               Current Stock: <span className="font-bold text-red-400 font-mono">{p.stockAvailable}</span> (Critical: {p.criticalLevel})
                             </p>
 
-                            {/* Quick Action Buttons on Notification Item */}
-                            <div className="mt-2.5 flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={(e) => handleQuickRestock(e, p.id)}
-                                  className="text-[10px] bg-skeuo-gold/15 hover:bg-skeuo-gold/30 border border-skeuo-gold/40 text-skeuo-gold px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold transition-colors active:scale-95"
-                                  title="Instantly add stock to resolve alert"
-                                >
-                                  <Plus size={11} /> Restock (+{suggestedRestock})
-                                </button>
+                            {/* Action on Notification Item */}
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <button
+                                onClick={(e) => handleDismissSingle(e, p.id)}
+                                className="text-[10px] text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-white/06 transition-colors border border-white/08"
+                                title="I-dismiss o i-mark as read"
+                              >
+                                Dismiss
+                              </button>
 
-                                <button
-                                  onClick={(e) => handleDismissSingle(e, p.id)}
-                                  className="text-[10px] text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-white/06 transition-colors"
-                                  title="Mark this item as read"
-                                >
-                                  Dismiss
-                                </button>
-                              </div>
-
-                              <span className="text-[10px] text-gray-500 group-hover:text-skeuo-gold flex items-center transition-colors">
-                                Pindutin <ChevronRight size={11} />
+                              <span className="text-[10px] text-gray-500 group-hover:text-skeuo-gold flex items-center gap-0.5 transition-colors">
+                                Tingnan ang detalye <ChevronRight size={11} />
                               </span>
                             </div>
                           </div>

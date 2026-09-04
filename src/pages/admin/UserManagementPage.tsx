@@ -57,34 +57,17 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<User>>({});
   const [notification, setNotification] = useState<{ title: string; message: string } | null>(null);
-  const [isAutoFilled, setIsAutoFilled] = useState(false);
 
   const openAdd = () => {
     setEditUser(null);
     setForm({ role: targetRole, isActive: true, email: '', fullName: '', username: '' });
-    setIsAutoFilled(false);
     setShowModal(true);
   };
 
   const openEdit = (u: User) => {
     setEditUser(u);
     setForm(u);
-    setIsAutoFilled(false);
     setShowModal(true);
-  };
-
-  const handleEmailChange = (emailVal: string) => {
-    setForm(prev => {
-      const updated = { ...prev, email: emailVal };
-      // Auto-suggest name and username if they haven't been manually altered yet
-      if (!editUser && (!prev.fullName || isAutoFilled)) {
-        const { fullName, username } = deriveNameFromEmail(emailVal);
-        updated.fullName = fullName;
-        updated.username = username;
-        setIsAutoFilled(true);
-      }
-      return updated;
-    });
   };
 
   const handleSendInvite = () => {
@@ -310,37 +293,28 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({ targetRo
         <div className="space-y-4">
           {/* Email (Primary Field) */}
           <SkeuoInput
-            label="EMAIL ADDRESS *"
+            label="Email Address"
             id="ua-email"
             type="email"
-            placeholder="alveromaryrose025@gmail.com"
             value={form.email || ''}
-            onChange={e => handleEmailChange(e.target.value)}
+            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
             required
           />
 
-          {/* Full Name (Auto-derived or customizable) */}
+          {/* Full Name */}
           <SkeuoInput
-            label="FULL NAME"
+            label="Full Name"
             id="ua-name"
-            placeholder="Mary Rose Alvero"
             value={form.fullName || ''}
-            onChange={e => {
-              setIsAutoFilled(false);
-              setForm(f => ({ ...f, fullName: e.target.value }));
-            }}
+            onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
           />
 
-          {/* Username (Auto-derived or customizable) */}
+          {/* Username */}
           <SkeuoInput
-            label="USERNAME"
+            label="Username"
             id="ua-user"
-            placeholder="maryrosealvero"
             value={form.username || ''}
-            onChange={e => {
-              setIsAutoFilled(false);
-              setForm(f => ({ ...f, username: e.target.value }));
-            }}
+            onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
           />
 
           {/* Information Banner explaining Email Confirmation Flow */}

@@ -69,11 +69,20 @@ const navSections: NavSection[] = [
 
 export const Sidebar: React.FC = () => {
   const { currentUser, logout } = useAuthStore();
-  const getAlertCounts = useInventoryStore(s => s.getAlertCounts);
+  const products = useInventoryStore(s => s.products);
   const { isSidebarOpen, closeSidebar } = useUIStore();
   const navigate = useNavigate();
   const clerk = isClerkConfigured ? useClerk() : null;
-  const alerts = getAlertCounts();
+
+  // Reactively calculate alert counts so when stock is replenished, the badge immediately disappears
+  const today = new Date();
+  const in30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const alerts = {
+    outOfStock: products.filter(p => p.status === 'OUT_OF_STOCK').length,
+    critical: products.filter(p => p.status === 'CRITICAL').length,
+    expired: products.filter(p => p.status === 'EXPIRED').length,
+    expiringSoon: products.filter(p => p.expiryDate && new Date(p.expiryDate) > today && new Date(p.expiryDate) <= in30Days).length,
+  };
 
   const handleLogout = async () => {
     closeSidebar();

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpCircle, ArrowDownCircle, History, RefreshCw } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
@@ -12,18 +13,39 @@ import { formatDateTime } from '../../utils';
 import type { MovementType } from '../../types';
 
 export const StockInOutPage: React.FC = () => {
+  const location = useLocation();
+  const initialProductId = (location.state as any)?.selectedProductId || '';
   const { products, movements, adjustStock } = useInventoryStore();
   const currentUser = useAuthStore(s => s.currentUser);
   const logAudit = useAuditLogger();
 
-  const [productId, setProductId] = useState('');
+  const [productId, setProductId] = useState(initialProductId);
   const [type, setType] = useState<MovementType>('STOCK_IN');
-  const [quantity, setQuantity] = useState('');
-  const [ref, setRef] = useState('');
+  const [quantity, setQuantity] = useState(() => {
+    if (initialProductId) {
+      const prod = products.find(p => p.id === initialProductId);
+      if (prod) {
+        const needed = Math.max(0, prod.criticalLevel - prod.stockAvailable) + 5;
+        return String(Math.max(needed, prod.reorderQuantity || 10, 10));
+      }
+    }
+    return '';
+  });
+  const [ref, setRef] = useState(() => initialProductId ? `RESTOCK-${Date.now().toString().slice(-4)}` : '');
   const [notes, setNotes] = useState('');
   const [done, setDone] = useState(false);
 
   const selectedProduct = products.find(p => p.id === productId);
+
+  const handleProductSelect = (id: string) => {
+    setProductId(id);
+    const prod = products.find(p => p.id === id);
+    if (prod && type === 'STOCK_IN' && !quantity) {
+      const needed = Math.max(0, prod.criticalLevel - prod.stockAvailable) + 5;
+      setQuantity(String(Math.max(needed, prod.reorderQuantity || 10, 10)));
+      if (!ref) setRef(`RESTOCK-${Date.now().toString().slice(-4)}`);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +66,7 @@ export const StockInOutPage: React.FC = () => {
           <div className="skeuo-panel border border-white/08 rounded-2xl p-6">
             <h3 className="font-display font-bold text-skeuo-chrome mb-5">Stock Adjustment</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <SkeuoSelect label="Product" id="sa-product" value={productId} onChange={e => setProductId(e.target.value)}
+              <SkeuoSelect label="Product" id="sa-product" value={productId} onChange={e => handleProductSelect(e.target.value)}
                 options={[{ value: '', label: '— Select a product —' }, ...products.map(p => ({ value: p.id, label: `${p.sku} — ${p.name} (${p.stockAvailable} available)` }))]}
                 required />
 

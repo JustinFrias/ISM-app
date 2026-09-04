@@ -31,7 +31,9 @@ export const CriticalStockAlertsPage: React.FC = () => {
 
   const openRestockModal = (p: Product) => {
     setSelectedProduct(p);
-    setRestockQty(p.reorderQuantity > 0 ? p.reorderQuantity : 10);
+    const neededAboveCritical = Math.max(0, p.criticalLevel - p.stockAvailable) + 5;
+    const suggested = Math.max(neededAboveCritical, p.reorderQuantity || 10, 10);
+    setRestockQty(suggested);
   };
 
   const handlePerformRestock = () => {

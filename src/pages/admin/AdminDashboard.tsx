@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Package, Truck, DollarSign, AlertTriangle, ArrowRight, ChevronRight, Box, Layers } from 'lucide-react';
+import { TrendingUp, TrendingDown, Package, Truck, DollarSign, AlertTriangle, ArrowRight, ChevronRight, Box, Layers, Plus } from 'lucide-react';
 import { Header } from '../../components/layout/Header';
 import { SkeuoGauge } from '../../components/skeuomorphic/SkeuoGauge';
 import { SkeuoBadge } from '../../components/skeuomorphic/SkeuoBadge';
@@ -42,6 +42,7 @@ const KPICard: React.FC<KPICardProps> = ({ label, value, sub, icon, trend, color
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const products = useInventoryStore(s => s.products);
+  const adjustStock = useInventoryStore(s => s.adjustStock);
   const getAlerts = useInventoryStore(s => s.getAlertCounts);
   const monthlyReports = useFinancialStore(s => s.monthlyReports);
   const deliveries = useDeliveryStore(s => s.deliveries);
@@ -196,14 +197,36 @@ export const AdminDashboard: React.FC = () => {
                 Close
               </SkeuoButton>
               <SkeuoButton
+                variant="success"
+                size="sm"
+                onClick={() => {
+                  if (selectedProduct) {
+                    const needed = Math.max(0, selectedProduct.criticalLevel - selectedProduct.stockAvailable) + 5;
+                    const restockQty = Math.max(needed, selectedProduct.reorderQuantity || 10, 10);
+                    adjustStock(
+                      selectedProduct.id,
+                      'STOCK_IN',
+                      restockQty,
+                      'admin',
+                      'Admin',
+                      `RESTOCK-${Date.now().toString().slice(-4)}`,
+                      `Quick restock from Admin Dashboard (+${restockQty} ${selectedProduct.unit})`
+                    );
+                    setSelectedProduct(null);
+                  }
+                }}
+              >
+                <Plus size={14} /> Quick Restock (+{Math.max(selectedProduct.reorderQuantity || 10, 10)})
+              </SkeuoButton>
+              <SkeuoButton
                 variant="gold"
                 size="sm"
                 onClick={() => {
-                  navigate('/stock-io');
+                  navigate('/stock-io', { state: { selectedProductId: selectedProduct.id } });
                   setSelectedProduct(null);
                 }}
               >
-                <Box size={14} /> Stock In / Restock
+                <Box size={14} /> Custom Stock In
               </SkeuoButton>
             </>
           }

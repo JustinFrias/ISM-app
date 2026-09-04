@@ -26,10 +26,10 @@ interface InventoryStore {
   getAlertCounts: () => { outOfStock: number; critical: number; expired: number; expiringSoon: number };
 }
 
-const computeStatus = (p: Product): Product['status'] => {
+export const computeStatus = (p: Product): Product['status'] => {
   if (p.expiryDate && new Date(p.expiryDate) < new Date()) return 'EXPIRED';
-  if (p.stockAvailable === 0) return 'OUT_OF_STOCK';
-  if (p.stockAvailable <= p.criticalLevel) return 'CRITICAL';
+  if (p.stockAvailable <= 0) return 'OUT_OF_STOCK';
+  if (p.stockAvailable < p.criticalLevel) return 'CRITICAL';
   return 'IN_STOCK';
 };
 

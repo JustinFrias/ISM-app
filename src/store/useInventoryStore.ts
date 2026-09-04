@@ -102,7 +102,16 @@ export const useInventoryStore = create<InventoryStore>()(
             notes,
             timestamp: new Date().toISOString(),
           };
-          const updatedProd = { ...prod, stockAvailable: newStock, updatedAt: new Date().toISOString() };
+          const isExpired = prod.expiryDate && new Date(prod.expiryDate) < new Date();
+          const freshExpiry = (['STOCK_IN', 'RETURN'].includes(type) && isExpired)
+            ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            : prod.expiryDate;
+          const updatedProd: Product = {
+            ...prod,
+            stockAvailable: newStock,
+            expiryDate: freshExpiry,
+            updatedAt: new Date().toISOString()
+          };
           return {
             products: state.products.map(p => p.id === productId ? { ...updatedProd, status: computeStatus(updatedProd) } : p),
             movements: [movement, ...state.movements],

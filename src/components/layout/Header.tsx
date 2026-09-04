@@ -87,12 +87,10 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
 
 
   const handleItemClick = (p: Product) => {
-    // Automatically mark as read/dismissed from unread list
+    // Mark as read, close dropdown, then navigate to Stock Alerts
     setDismissedIds(prev => Array.from(new Set([...prev, p.id])));
     setShowNotifications(false);
-    setSelectedAlertProduct(p);
-    const needed = Math.max(0, p.criticalLevel - p.stockAvailable) + 5;
-    setModalRestockQty(Math.max(needed, p.reorderQuantity || 10, 10));
+    navigate('/alerts');
   };
 
   const handleModalRestockConfirm = () => {
@@ -332,10 +330,10 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, actions }) => {
       <AnimatePresence>
         {successToast && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="fixed top-4 right-4 z-50 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 shadow-2xl backdrop-blur-md flex items-center gap-3 max-w-sm"
+            exit={{ opacity: 0, y: 15 }}
+            className="fixed bottom-4 right-4 z-50 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 shadow-2xl backdrop-blur-md flex items-center gap-3 max-w-sm"
           >
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <p className="text-xs font-semibold">{successToast}</p>

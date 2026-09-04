@@ -89,22 +89,20 @@ export const CriticalStockAlertsPage: React.FC = () => {
       />
 
       <div className="flex-1 p-8 space-y-6">
-        {/* Success Alert Banner */}
+        {/* Success Toast - bottom right */}
         <AnimatePresence>
           {successNotice && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center justify-between shadow-lg"
+              exit={{ opacity: 0, y: 15 }}
+              className="fixed bottom-4 right-4 z-50 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 shadow-2xl backdrop-blur-md flex items-center gap-3 max-w-sm"
             >
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                <p className="text-sm font-semibold text-emerald-200">{successNotice}</p>
-              </div>
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <p className="text-sm font-semibold text-emerald-200">{successNotice}</p>
               <button
                 onClick={() => setSuccessNotice(null)}
-                className="text-emerald-400 hover:text-white text-xs px-2 py-1"
+                className="text-emerald-400 hover:text-white text-xs ml-auto px-1.5 py-0.5"
               >
                 ✕
               </button>

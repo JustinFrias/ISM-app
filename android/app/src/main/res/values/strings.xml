@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ISM Inventory</string>
+    <string name="title_activity_main">ISM Inventory</string>
+    <string name="package_name">com.ism.inventory</string>
+    <string name="custom_url_scheme">com.ism.inventory</string>
+</resources>

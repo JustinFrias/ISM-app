@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, Layers } from 'lucide-react';
+import { Plus, Edit2, Trash2, Layers, ChevronRight, Package, Box } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { SkeuoBadge } from '../../components/skeuomorphic/SkeuoBadge';
+import { formatCurrency } from '../../utils';
 import { Header } from '../../components/layout/Header';
 import { SkeuoButton } from '../../components/skeuomorphic/SkeuoButton';
 import { SkeuoModal, ConfirmModal } from '../../components/skeuomorphic/SkeuoModal';
@@ -11,12 +14,14 @@ import type { Category } from '../../types';
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#ef4444', '#06b6d4', '#d4af37'];
 
 export const CategoriesPage: React.FC = () => {
+  const navigate = useNavigate();
   const { categories, products, addCategory, updateCategory, deleteCategory } = useInventoryStore();
   const [showModal, setShowModal] = useState(false);
   const [editCat, setEditCat] = useState<Category | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [form, setForm] = useState<Partial<Category>>({ colorTag: COLORS[0] });
+  const [viewCat, setViewCat] = useState<Category | null>(null);
 
   const openAdd = () => { setEditCat(null); setForm({ colorTag: COLORS[0] }); setShowModal(true); };
   const openEdit = (c: Category) => { setEditCat(c); setForm(c); setShowModal(true); };
@@ -53,17 +58,22 @@ export const CategoriesPage: React.FC = () => {
           {categories.map((cat, i) => {
             const count = products.filter(p => p.categoryId === cat.id).length;
             return (
-              <motion.div key={cat.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              <motion.div
+                key={cat.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
-                className="skeuo-panel border border-white/08 rounded-2xl p-5 hover:border-white/15 transition-all group">
+                onClick={() => setViewCat(cat)}
+                className="skeuo-panel border border-white/08 rounded-2xl p-5 hover:border-white/15 hover:bg-white/02 transition-all group cursor-pointer select-none active:scale-[0.98]"
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-skeuo-button"
                     style={{ background: `${cat.colorTag}25`, border: `1px solid ${cat.colorTag}40` }}>
                     <Layers size={20} style={{ color: cat.colorTag }} />
                   </div>
                   <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <SkeuoButton variant="ghost" size="xs" onClick={() => openEdit(cat)}><Edit2 size={12} /></SkeuoButton>
-                    <SkeuoButton variant="danger" size="xs" onClick={() => setDeleteId(cat.id)}><Trash2 size={12} /></SkeuoButton>
+                    <SkeuoButton variant="ghost" size="xs" onClick={(e) => { e.stopPropagation(); openEdit(cat); }}><Edit2 size={12} /></SkeuoButton>
+                    <SkeuoButton variant="danger" size="xs" onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }}><Trash2 size={12} /></SkeuoButton>
                   </div>
                 </div>
                 <h3 className="font-display font-bold text-skeuo-chrome text-lg">{cat.name}</h3>
@@ -71,7 +81,10 @@ export const CategoriesPage: React.FC = () => {
                 {cat.description && <p className="text-xs text-gray-500 mt-2 leading-relaxed">{cat.description}</p>}
                 <div className="mt-4 pt-4 border-t border-white/06 flex items-center justify-between">
                   <span className="text-xs text-gray-600">{count} product{count !== 1 ? 's' : ''}</span>
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.colorTag, boxShadow: `0 0 6px ${cat.colorTag}` }} />
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.colorTag, boxShadow: `0 0 6px ${cat.colorTag}` }} />
+                    <ChevronRight size={13} className="text-gray-600 group-hover:text-skeuo-gold transition-colors" />
+                  </div>
                 </div>
               </motion.div>
             );
@@ -107,6 +120,54 @@ export const CategoriesPage: React.FC = () => {
 
       <ConfirmModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={() => deleteId && handleDelete(deleteId)}
         title="Delete Category" message="Delete this category? Products in this category must be reassigned first." isDanger />
+
+      {/* Category Products Viewer Modal */}
+      {viewCat && (() => {
+        const catProducts = products.filter(p => p.categoryId === viewCat.id);
+        return (
+          <SkeuoModal
+            isOpen={!!viewCat}
+            onClose={() => setViewCat(null)}
+            title={viewCat.name}
+            subtitle={`${viewCat.code} · ${catProducts.length} product${catProducts.length !== 1 ? 's' : ''}`}
+            size="md"
+            footer={
+              <>
+                <SkeuoButton variant="ghost" size="sm" onClick={() => setViewCat(null)}>Close</SkeuoButton>
+                <SkeuoButton variant="gold" size="sm" onClick={() => { setViewCat(null); navigate('/inventory'); }}>
+                  <Box size={13} /> View in Inventory
+                </SkeuoButton>
+              </>
+            }
+          >
+            <div className="space-y-2">
+              {catProducts.length === 0 ? (
+                <div className="py-10 text-center">
+                  <Package size={32} className="mx-auto text-gray-600 mb-2" />
+                  <p className="text-sm text-gray-500">Walang produkto sa kategoryang ito.</p>
+                </div>
+              ) : (
+                catProducts.map(p => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/03 border border-white/06 hover:bg-white/06 transition-colors">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: `${viewCat.colorTag}20`, border: `1px solid ${viewCat.colorTag}40` }}>
+                      <Package size={14} style={{ color: viewCat.colorTag }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-100 truncate">{p.name}</p>
+                      <p className="text-xs text-gray-500 font-mono">{p.sku}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <SkeuoBadge label={p.status} status={p.status} dot />
+                      <p className="text-xs text-gray-400 font-mono mt-1">Qty: <span className="text-skeuo-gold font-bold">{p.stockAvailable}</span></p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </SkeuoModal>
+        );
+      })()}
     </div>
   );
 };

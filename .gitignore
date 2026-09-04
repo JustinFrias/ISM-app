@@ -29,14 +29,3 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
-
-# Android
-android/.gradle/
-android/build/
-android/app/build/
-android/.idea/
-android/*.iml
-android/app/*.iml
-release-apk/
-*.apk
-*.aab
